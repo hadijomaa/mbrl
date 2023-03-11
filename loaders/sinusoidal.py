@@ -40,12 +40,8 @@ class SinusoidalTask(Task):
         func = lambda x: np.sin(x + phase) * amplitude + np.sin(np.pi * x)
         y = func(X)
         self.test_index, self.tr_index = split(seed=seed, X=X)
-        self.data = {"all": X,
-                     "train": X[self.tr_index],
-                     "test": X[self.test_index]}
-        self.targets = {"all": y,
-                        "train": y[self.tr_index],
-                        "test": y[self.test_index]}
+        self.data = X  # {"all": X, "train": X[self.tr_index], "test": X[self.test_index]}
+        self.targets = y  # {"all": y, "train": y[self.tr_index], "test": y[self.test_index]}
         self.target_info = {"y_min": y.min(),
                             "y_max": y.max()}
         self.on_epoch_end()

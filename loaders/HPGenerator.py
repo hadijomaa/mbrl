@@ -3,7 +3,7 @@ import logging
 import os
 import timeit
 
-from hpresponse import HPOTask
+from loaders.hpresponse import HPOTask
 from loaders import Generator, SEARCH_SPACE_IDS, PARTS
 
 logging.basicConfig(level=logging.INFO)
@@ -14,7 +14,8 @@ class MetaTaskGenerator(Generator):
     Metatask Class.
     """
 
-    def __init__(self, data_directory, search_space_id, seed=0, batch_size=None, meta_batch_size=8, shuffle=True):
+    def __init__(self, data_directory, search_space_id, inner_steps=5, seed=0, batch_size=None, meta_batch_size=8,
+                 shuffle=True):
         """
         Constructor for the Metatask Class
 
@@ -30,7 +31,8 @@ class MetaTaskGenerator(Generator):
             batch_size (int): size of batch
             shuffle (bool): shuffle instances after each epoch
         """
-        super(MetaTaskGenerator, self).__init__(seed=seed, meta_batch_size=meta_batch_size, shuffle=shuffle)
+        super(MetaTaskGenerator, self).__init__(seed=seed, meta_batch_size=meta_batch_size, shuffle=shuffle,
+                                                inner_steps=inner_steps)
 
         assert search_space_id in SEARCH_SPACE_IDS, f"{search_space_id} not in {SEARCH_SPACE_IDS}"
 

@@ -1,5 +1,5 @@
 import tensorflow as tf
-import networks
+from modules import networks
 
 
 class EncoderLayer(tf.keras.layers.Layer):
@@ -60,11 +60,6 @@ class DecoderLayer(tf.keras.layers.Layer):
         super(DecoderLayer, self).__init__()
 
         self.last_attn_scores = None
-        self.self_attention = networks.GlobalSelfAttention(
-            num_heads=num_heads,
-            key_dim=d_model,
-            dropout=dropout_rate)
-
         self.cross_attention = networks.CrossAttention(
             num_heads=num_heads,
             key_dim=d_model,
@@ -73,7 +68,6 @@ class DecoderLayer(tf.keras.layers.Layer):
         self.ffn = networks.FeedForward(d_model, dff)
 
     def call(self, x, context):
-        x = self.self_attention(x=x)
         x = self.cross_attention(x=x, context=context)
 
         # Cache the last attention scores for plotting later
@@ -115,12 +109,18 @@ class Decoder(tf.keras.layers.Layer):
 
 class Transformer(tf.keras.Model):
     def __init__(self, *, num_layers, d_model, num_heads, dff,
-                 num_latent, dropout_rate=0.1):
+                 num_latent=1, dropout_rate=0.1):
         super().__init__()
         self.ffn = tf.keras.Sequential([
             tf.keras.layers.Dense(d_model, activation='relu'),
             tf.keras.layers.Dropout(dropout_rate)
         ])
+
+        self.ffn_2 = tf.keras.Sequential([
+            tf.keras.layers.Dense(d_model, activation='relu'),
+            tf.keras.layers.Dropout(dropout_rate)
+        ])
+
         self.encoder = Encoder(num_layers=num_layers, d_model=d_model,
                                num_heads=num_heads, dff=dff,
                                dropout_rate=dropout_rate)
@@ -129,22 +129,22 @@ class Transformer(tf.keras.Model):
                                num_heads=num_heads, dff=dff,
                                dropout_rate=dropout_rate)
 
-        self.final_layer = networks.VariationalMLP(d_model=d_model, dff=num_latent, dropout_rate=dropout_rate)
+        self.variational_layer = networks.VariationalMLP(d_model=d_model, dff=num_latent, dropout_rate=dropout_rate)
 
     def call(self, inputs):
         # To use a Keras model with `.fit` you must pass all your inputs in the
         # first argument.
         context, x = inputs
-        context = self.ffn(context)
 
-        x = self.ffn(x)
+        context = self.ffn(context)
         context = self.encoder(context)  # (batch_size, context_len, d_model)
 
+        x = self.ffn_2(x)
         x = self.decoder(x, context)  # (batch_size, target_len, d_model)
 
         # Final linear layer output.
-        logits = self.final_layer(x)  # (batch_size, target_len, target_vocab_size)
-
+        logits = self.variational_layer(x)  # (batch_size, target_len, target_vocab_size)
+        logits = tf.squeeze(logits, axis=1)
         try:
             # Drop the keras mask, so it doesn't scale the losses/metrics.
             # b/250038731
@@ -162,11 +162,12 @@ if __name__ == "__main__":
     d_model = 64
     num_heads = 8
     dff = 1024
-    num_latent = 32
+    num_latent = 1
     dropout_rate = 0.1
 
     transformer = Transformer(num_layers=num_layers, num_heads=num_heads, dropout_rate=dropout_rate,
                               dff=dff, d_model=d_model, num_latent=num_latent)
+    transformer.compile()
     context = tf.convert_to_tensor(np.random.rand(64, 10, 5))
-    x = tf.convert_to_tensor(np.random.rand(64, 3, 5))
+    x = tf.convert_to_tensor(np.random.rand(64, 1, 5))
     out = transformer((context, x))

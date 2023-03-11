@@ -67,9 +67,8 @@ class HPOTask(Task):
             with open(cache_path, 'wb') as f:
                 pickle.dump((X, self.info, y, self.target_info, self.initializations,
                              self.surrogate_stats, self.surrogate), f)
-        self.mode = "all"
-        self.data = {self.mode: X}
-        self.targets = {self.mode: y}
+        self.data = X
+        self.targets = y
         self.on_epoch_end()
 
     def from_pickled_id(self):

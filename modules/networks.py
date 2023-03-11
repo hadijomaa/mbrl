@@ -68,7 +68,7 @@ class FeedForward(tf.keras.layers.Layer):
 
 class VariationalMLP(tf.keras.layers.Layer):
     def __init__(self, d_model, dff, dropout_rate=0.1):
-        super(VariationalMLP, self).__init__()
+        super().__init__()
 
         self.penultimate_layer = tf.keras.Sequential([
             tf.keras.layers.Dense((d_model + dff) // 2, activation='relu'),
@@ -78,7 +78,7 @@ class VariationalMLP(tf.keras.layers.Layer):
         self.mean_layer = tf.keras.layers.Dense(dff)
         self.std_layer = tf.keras.layers.Dense(dff)
 
-    def forward(self, x):
+    def call(self, x):
         hidden = self.penultimate_layer(x)
 
         # Then apply further linear layers to output latent mu and log sigma
