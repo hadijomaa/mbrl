@@ -1,4 +1,5 @@
 import tensorflow as tf
+
 from modules import networks
 
 
@@ -108,10 +109,9 @@ class Decoder(tf.keras.layers.Layer):
 
 
 class Transformer(tf.keras.Model):
-    def __init__(self, *, num_layers, d_model, num_heads, dff,
-                 num_latent=1, dropout_rate=0.1):
+    def __init__(self, *, num_layers_encoder, num_layers_decoder, d_model, num_heads, hidden_units, num_latent=1,
+                 dropout_rate=0.1):
         super().__init__()
-        tf.random.set_seed(0)
         self.ffn = tf.keras.Sequential([
             tf.keras.layers.Dense(d_model, activation='relu'),
             tf.keras.layers.Dropout(dropout_rate)
@@ -122,12 +122,10 @@ class Transformer(tf.keras.Model):
             tf.keras.layers.Dropout(dropout_rate)
         ])
 
-        self.encoder = Encoder(num_layers=num_layers, d_model=d_model,
-                               num_heads=num_heads, dff=dff,
+        self.encoder = Encoder(num_layers=num_layers_encoder, d_model=d_model, num_heads=num_heads, dff=hidden_units,
                                dropout_rate=dropout_rate)
 
-        self.decoder = Decoder(num_layers=num_layers, d_model=d_model,
-                               num_heads=num_heads, dff=dff,
+        self.decoder = Decoder(num_layers=num_layers_decoder, d_model=d_model, num_heads=num_heads, dff=hidden_units,
                                dropout_rate=dropout_rate)
 
         self.variational_layer = networks.VariationalMLP(d_model=d_model, dff=num_latent, dropout_rate=dropout_rate)
@@ -158,9 +156,11 @@ class Transformer(tf.keras.Model):
 
 
 if __name__ == "__main__":
+    tf.random.set_seed(96)
     import numpy as np
 
-    num_layers = 2
+    num_layers_encoder = 2
+    num_layers_decoder = 2
     d_model = 64
     num_heads = 8
     dff = 1024
@@ -169,10 +169,13 @@ if __name__ == "__main__":
     input_dim = 5
     x = tf.keras.layers.Input(shape=(None, input_dim,))
     context = tf.keras.layers.Input(shape=(None, input_dim + 1,))
-    transformer = Transformer(num_layers=num_layers, num_heads=num_heads, dropout_rate=dropout_rate,
-                              dff=dff, d_model=d_model, num_latent=num_latent)([context, x])
+    transformer = Transformer(num_layers_encoder=num_layers_encoder, num_layers_decoder=num_layers_decoder,
+                              num_heads=num_heads, dropout_rate=dropout_rate,
+                              hidden_units=dff, d_model=d_model, num_latent=num_latent)([context, x])
     transformer = tf.keras.Model(inputs=[context, x], outputs=transformer)
     transformer.compile()
-    context = tf.convert_to_tensor(np.random.rand(64, 10, input_dim + 1))
-    x = tf.convert_to_tensor(np.random.rand(64, 1, input_dim))
+    chocolate = np.random.RandomState(seed=0)
+    context = tf.convert_to_tensor(chocolate.rand(64, 10, input_dim + 1))
+    x = tf.convert_to_tensor(chocolate.rand(64, 1, input_dim))
     out = transformer((context, x))
+    print(transformer.get_weights())
