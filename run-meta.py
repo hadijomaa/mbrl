@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 from batchloader import DataGenerator
-from net import deepset as net
+from modules.net import deepset as net
 from net_utils import mse,nll,log_var
 import datetime
 import numpy as np

@@ -5,7 +5,7 @@ from __future__ import absolute_import
 import numpy as np
 random = np.random.RandomState(12393)
 from optimizer import Optimizer
-import pandas as pd
+
 
 class MPC(object):
 
@@ -235,7 +235,7 @@ def dense_hpo(x,t,data):
     return x_t
 
 if __name__=="__main__":
-    from net import deepset as net
+    from modules.net import deepset as net
     import pandas as pd
     import os
     from batchloader import DataGenerator

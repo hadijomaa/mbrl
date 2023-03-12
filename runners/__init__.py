@@ -82,8 +82,9 @@ class Runner:
         return self.inner_steps > 1
 
     def fit(self):
-        callbacks = [tf.keras.callbacks.ModelCheckpoint(filepath=self.model_path, save_weights_only=True,
-                                                        monitor='val_loss', mode='min', save_best_only=True),
+        callbacks = [
+            tf.keras.callbacks.ModelCheckpoint(filepath=os.path.join(self.model_path, "model"), save_weights_only=True,
+                                               monitor='val_loss', mode='min', save_best_only=True),
                      SaveLogsCallback(checkpoint_path=self.model_path, has_validation=True)]
 
         if self.apply_scheduler == "polynomial":
@@ -116,9 +117,6 @@ class Runner:
                        epochs=self.epochs)
 
     def setup_model_path(self):
-        self.model_path = os.path.join(self.save_path,
-                                       self.search_space,
-                                       "reptile" if self.is_reptile else "joint",
+        self.model_path = os.path.join(self.save_path, self.search_space, "reptile" if self.is_reptile else "joint",
                                        self.job_start_date)
-
         os.makedirs(self.model_path, exist_ok=True)

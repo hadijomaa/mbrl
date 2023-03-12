@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 import tqdm
-from net import deepsetEnsemble as net
+from modules.net import deepsetEnsemble as net
 from net_utils import _map
 from batchloader import DataGenerator
 import argparse

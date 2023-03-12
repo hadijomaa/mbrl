@@ -31,8 +31,7 @@ def get_transformer_parser(parser=None):
     parser.add_argument('--meta_learning_rate', type=float, default=1e-3, help='learning rate for meta-updates')
     parser.add_argument('--meta_optimizer', type=str, default="sgd", choices=["adam", "radam", "sgd"],
                         help='Meta-optimizer')
-    parser.add_argument('--optimizer', type=str, default="sgd", choices=["adam", "sgd"],
-                        help='optimizer')
+    parser.add_argument('--optimizer', type=str, default="sgd", choices=["adam", "sgd"], help='optimizer')
     return parser
 
 
@@ -43,7 +42,7 @@ def get_runner_parser(parser=None):
     parser.add_argument('--meta_batch_size', type=int, default=8,
                         help="Meta-batch size when querying tasks for meta-training")
     parser.add_argument('--seed', help='Seed', type=int, default=0)
-    parser.add_argument('--inner_steps', type=int, default=5,
+    parser.add_argument('--inner_steps', type=int, default=1,
                         help='Number of inner steps for the first order meta-learning')
     parser.add_argument('--epochs', type=int, default=5, help='Number of epochs')
     parser.add_argument('--save_path', type=str, default="./checkpoints", help='Checkpoint base directory')
