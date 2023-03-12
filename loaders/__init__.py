@@ -73,6 +73,10 @@ class Generator(tf.keras.utils.Sequence):
             self.randomizer.shuffle(self.indexes)
         self.indexes = np.repeat(self.indexes, self.inner_steps).tolist()
 
+    @property
+    def n_features(self):
+        return self.meta_data[self.mode][self.files[self.mode][0]].n_features
+
 
 class Task(tf.keras.utils.Sequence):
     def __init__(self, seed=0, batch_size=1, shuffle=True):

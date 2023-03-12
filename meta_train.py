@@ -13,3 +13,6 @@ if __name__ == "__main__":
     args.dff = 2 ** args.dff
 
     runner = Runner(args)
+    runner.compile_model()
+    runner.fit()
+
