@@ -15,7 +15,7 @@ class MetaSinusoidalGenerator(Generator):
     """
 
     def __init__(self, number_of_tasks, phase_bounds=PHASE_BOUNDS, amplitude_bounds=AMPLITUDE_BOUNDS, batch_size=None,
-                 domain_bounds=DOMAIN_BOUNDS, granularity=GRANULARITY, seed=0, meta_batch_size=8, shuffle=True):
+                 domain_bounds=DOMAIN_BOUNDS, granularity=GRANULARITY, seed=0, inner_steps=1, shuffle=True):
         """
         Constructor for the Metatoy task Class
 
@@ -29,8 +29,9 @@ class MetaSinusoidalGenerator(Generator):
             meta_batch_size (int): size of batch
             batch_size (int): size of batch
             shuffle (bool): shuffle instances after each epoch
+            inner_steps (int): number of inner steps per task
         """
-        super(MetaSinusoidalGenerator, self).__init__(seed=seed, meta_batch_size=meta_batch_size, shuffle=shuffle)
+        super(MetaSinusoidalGenerator, self).__init__(seed=seed, inner_steps=inner_steps, shuffle=shuffle)
         self.mode = "train"
         self.phase_low, self.phase_high = phase_bounds
         self.amplitude_low, self.amplitude_high = amplitude_bounds
@@ -67,5 +68,5 @@ class MetaSinusoidalGenerator(Generator):
 if __name__ == "__main__":
     tasks = MetaSinusoidalGenerator(phase_bounds=(0, 2), amplitude_bounds=(0.1, 5),
                                     number_of_tasks={"train": 64, "validation": 16, "test": 20}, granularity=0.1,
-                                    domain_bounds=(-5, 5), batch_size=None, meta_batch_size=16, shuffle=True)
+                                    domain_bounds=(-5, 5), batch_size=None, shuffle=True)
     x = next(iter(tasks))

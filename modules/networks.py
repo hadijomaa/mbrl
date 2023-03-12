@@ -10,6 +10,10 @@ class BaseAttention(tf.keras.layers.Layer):
 
 
 class CrossAttention(BaseAttention):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.last_attn_scores = None
+
     def call(self, x, context):
         attn_output, attn_scores = self.mha(
             query=x,
@@ -88,4 +92,4 @@ class VariationalMLP(tf.keras.layers.Layer):
         # Bound the variance
         sigma = 0.1 + 0.9 * tf.nn.softplus(log_sigma)
 
-        return tf.concat([mu,sigma],axis=-1)
+        return tf.concat([mu, sigma], axis=-1)

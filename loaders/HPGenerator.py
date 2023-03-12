@@ -14,8 +14,8 @@ class MetaTaskGenerator(Generator):
     Metatask Class.
     """
 
-    def __init__(self, data_directory, search_space_id, inner_steps=5, seed=0, batch_size=None, meta_batch_size=8,
-                 shuffle=True):
+    def __init__(self, data_directory, search_space_id, mode=None, inner_steps=1, seed=0, batch_size=None,
+                 shuffle=True, fixed_context=False):
         """
         Constructor for the Metatask Class
 
@@ -27,18 +27,20 @@ class MetaTaskGenerator(Generator):
                                 - surrogates
             search_space_id (str): search space id of interest
             seed (int): random seed
-            meta_batch_size (int): size of batch
             batch_size (int): size of batch
             shuffle (bool): shuffle instances after each epoch
+            inner_steps (int): number of inner steps per task
+            mode (str): mode of generator (train/test/valid)
+            fixed_context (bool): indicator if we use the initialization seeds as context
+
         """
-        super(MetaTaskGenerator, self).__init__(seed=seed, meta_batch_size=meta_batch_size, shuffle=shuffle,
-                                                inner_steps=inner_steps)
+        super(MetaTaskGenerator, self).__init__(seed=seed, inner_steps=inner_steps, shuffle=shuffle)
 
         assert search_space_id in SEARCH_SPACE_IDS, f"{search_space_id} not in {SEARCH_SPACE_IDS}"
 
         self.search_space_id = search_space_id
-        self.mode = "train"
-
+        self.mode = mode if mode is not None else "train"
+        self.partitions = PARTS if mode is None else [mode]
         tic = timeit.default_timer()
 
         logging.info("Reading HPO-B database")
@@ -53,7 +55,7 @@ class MetaTaskGenerator(Generator):
 
         # read train/validation/test dataset ids
         self.files = dict()
-        for part in PARTS:
+        for part in self.partitions:
             with open(os.path.join(data_directory, "splits", f"{part}.json"), "r") as f:
                 self.files[part] = json.load(f)[search_space_id]
 
@@ -64,10 +66,11 @@ class MetaTaskGenerator(Generator):
                                                      seeds=self.hpob_seeds[dataset_id],
                                                      stats=self.hpob_surrogate_stats,
                                                      surrogate_directory=os.path.join(data_directory, "surrogates"),
-                                                     seed=seed, shuffle=shuffle, batch_size=batch_size)
+                                                     seed=seed, shuffle=shuffle, batch_size=batch_size,
+                                                     fixed_context=fixed_context)
 
                                  for dataset_id in self.files[mode]}
-                          for mode in PARTS}
+                          for mode in self.partitions}
         self.on_epoch_end()
         toc = timeit.default_timer()
         logging.info(f"Initialization time {toc - tic:.2f} seconds")
@@ -76,5 +79,10 @@ class MetaTaskGenerator(Generator):
 if __name__ == "__main__":
     data_directory = "../hpob"
     search_space_id = "4796"
-    generator = MetaTaskGenerator(data_directory=data_directory, search_space_id=search_space_id)
-    tasks = next(iter(generator))
+    generator = MetaTaskGenerator(data_directory=data_directory, search_space_id=search_space_id,
+                                  seed=0, batch_size=0,
+                                  shuffle=True,
+                                  inner_steps=5, mode="train", fixed_context=True)
+    x, y = next(iter(generator))
+    # for x,y in generator:
+    #     pass

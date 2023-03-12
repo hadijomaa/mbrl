@@ -12,8 +12,10 @@ class HPOTask(Task):
     """
     HPO Task Class
     """
+    initialization_randomizer = None
 
-    def __init__(self, dataset_id, search_space_id, output_folder, seed, shuffle, batch_size, **kwargs):
+    def __init__(self, dataset_id, search_space_id, output_folder, seed, shuffle, batch_size, fixed_context=False,
+                 **kwargs):
         """
         Constructor for the Task Class
 
@@ -24,7 +26,7 @@ class HPOTask(Task):
             seed (int): random seed
             batch_size (int): size of batch
             shuffle (bool): shuffle instances after each epoch
-
+            fixed_context (bool): indicator if we use the initialization seeds as context
         Keyword Args:
             data (dict): dictionary that includes the configuration space "X" and function evaluations "y"
             seeds (dict): dictionary that includes initializations for Bayesian Optimization
@@ -38,6 +40,10 @@ class HPOTask(Task):
         self.dataset_id = dataset_id
         self.search_space_id = search_space_id
         self.folder = output_folder
+        self.fixed_context = fixed_context
+        if self.fixed_context:
+            self.initialization_randomizer = np.random.RandomState(seed=seed)
+
         self.name = f"{self.search_space_id}-{dataset_id}"
         self.surrogate_name = f"surrogate-{self.name}"
 
@@ -97,6 +103,15 @@ class HPOTask(Task):
         model.load_model(os.path.join(surrogate_directory, f"{self.surrogate_name}.json"))
         surrogate_info = stats[self.surrogate_name]
         return X, info, targets, target_info, initializations, surrogate_info, model
+
+    def get_context_indices(self, indexes):
+        if self.fixed_context:
+            seed = f"test{self.initialization_randomizer.choice(5)}"
+            context_size_indices = self.initializations[seed]
+            context_size_indices = list(map(lambda value: context_size_indices, indexes))
+            return context_size_indices
+        else:
+            return super().get_context_indices(indexes=indexes)
 
 
 if __name__ == "__main__":

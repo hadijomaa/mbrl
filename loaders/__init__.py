@@ -19,13 +19,12 @@ PARTS = [TRAIN, VAL, TEST]
 
 class Generator(tf.keras.utils.Sequence):
 
-    def __init__(self, seed, meta_batch_size, inner_steps, shuffle=True):
+    def __init__(self, seed, inner_steps, shuffle=True):
         """
         Constructor for the Meta-Task Generator
 
         Args:
             seed (int): random seed
-            meta_batch_size (int): size of batch
             inner_steps (int): number of inner steps per task
             shuffle (bool): shuffle instances after each epoch
         """
@@ -35,7 +34,7 @@ class Generator(tf.keras.utils.Sequence):
 
         self.inner_steps = inner_steps
         self.seed = seed
-        self.meta_batch_size = meta_batch_size
+        self.batch_size = 1
         self.shuffle = shuffle
 
         self.randomizer = np.random.RandomState(seed=seed)
@@ -45,7 +44,7 @@ class Generator(tf.keras.utils.Sequence):
         Number of task instances
         """
         # e.g. t0 t0 t0 t0 t0 .... tN tN tN tN tN
-        return (len(self.files[self.mode]) // self.meta_batch_size) * self.inner_steps
+        return len(self.files[self.mode]) * self.inner_steps
 
     def __getitem__(self, index):
         """
@@ -109,10 +108,7 @@ class Task(tf.keras.utils.Sequence):
         X = self.data[indexes].astype(np.float32)
         y = self.targets[indexes]
         if self.mode == "meta":
-            context_size = self.context_length_randomizer.choice(100)
-            context_size_indices = list(map(
-                lambda value: self.context_choice_randomizer.choice(np.setdiff1d(np.arange(self.data.shape[0]), value),
-                                                                    size=context_size, replace=False), indexes))
+            context_size_indices = self.get_context_indices(indexes)
             context_X = np.stack([self.data[i] for i in context_size_indices])
             context_y = np.stack([self.targets[i] for i in context_size_indices])
             context = np.concatenate([context_X, context_y], axis=-1)
@@ -139,3 +135,10 @@ class Task(tf.keras.utils.Sequence):
         self.indexes = np.arange(self.data.shape[0]).tolist()
         if self.shuffle:
             self.randomizer.shuffle(self.indexes)
+
+    def get_context_indices(self, indexes):
+        context_size = self.context_length_randomizer.choice(100)
+        context_size_indices = list(map(
+            lambda value: self.context_choice_randomizer.choice(np.setdiff1d(np.arange(self.data.shape[0]), value),
+                                                                size=context_size, replace=False), indexes))
+        return context_size_indices
