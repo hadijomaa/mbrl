@@ -1,5 +1,7 @@
 import argparse
-from loaders import SEARCH_SPACE_IDS
+SEARCH_SPACE_IDS = ['4796', '5527', '5636', '5859', '5860',
+                    '5891', '5906', '5965', '5970', '5971', '6766',
+                    '6767', '6794', '7607', '7609', '5889']
 
 
 def get_hp_parser(parser=None):
