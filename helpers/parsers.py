@@ -45,7 +45,8 @@ def get_runner_parser(parser=None):
     parser.add_argument('--batch_size', type=int, default=0, help="Batch size when querying instances from tasks")
     parser.add_argument('--meta_batch_size', type=int, default=8,
                         help="Meta-batch size when querying tasks for meta-training")
-    parser.add_argument('--seed', help='Seed', type=int, default=0)
+    parser.add_argument('--seed', help='Dataset Generator Seed', type=int, default=0)
+    parser.add_argument('--model_seed', help='Model Seed', type=int, default=0)
     parser.add_argument('--epochs', type=int, default=1, help='Number of epochs')
     parser.add_argument('--save_path', type=str, default="./checkpoints", help='Checkpoint base directory')
     return parser
@@ -54,5 +55,5 @@ def get_runner_parser(parser=None):
 def get_tuner_parser(parser=None):
     if not parser:
         parser = argparse.ArgumentParser()
-    parser.add_argument('--cs_seed', type=int, default=0, help="Batch size when querying instances from tasks")
+    parser.add_argument('--cs_seed', type=int, default=0, help="Seed of configuration seed")
     return parser

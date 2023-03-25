@@ -126,6 +126,7 @@ class Task(tf.keras.utils.Sequence):
         """
         if self.batch_size == 0:
             self.batch_size = self.data.shape[0]
+        self.batch_size = min(self.batch_size, self.data.shape[0])
         return self.data.shape[0] // self.batch_size
 
     @property
