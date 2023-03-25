@@ -56,4 +56,6 @@ def get_tuner_parser(parser=None):
     if not parser:
         parser = argparse.ArgumentParser()
     parser.add_argument('--cs_seed', type=int, default=0, help="Seed of configuration seed")
+    parser.add_argument('--reptile', type=int, default=0, choices=[0, 1],
+                        help="Optimize parameters using meta-learning")
     return parser

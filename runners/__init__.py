@@ -28,7 +28,7 @@ class Runner:
         self.seed = args.seed
         self.batch_size = args.batch_size
         self.meta_batch_size = args.meta_batch_size
-
+        self.is_reptile = args.reptile
         self.epochs = args.epochs
 
         self.job_start_date = datetime.now().strftime('%Y-%m-%d-%H-%M-%S-%f')
@@ -37,7 +37,8 @@ class Runner:
         self.save_path = os.path.join(rootdir, args.save_path)
 
         self.config = vars(args)
-        if "cs_seed" in self.config:
+        self.tuning_job = "cs_seed" in self.config
+        if self.tuning_job:
             cs = self.get_configspace(seed=self.config["cs_seed"])
             cs = cs.sample_configuration().get_dictionary()
             self.config.update(cs)
@@ -88,10 +89,6 @@ class Runner:
 
         self.model.compile(loss=losses.nll, optimizer=optimizer, metrics=[losses.log_var, losses.mse])
 
-    @property
-    def is_reptile(self):
-        return self.inner_steps > 1
-
     def fit(self):
         callbacks = [
             tf.keras.callbacks.ModelCheckpoint(filepath=os.path.join(self.model_path, "model"), save_weights_only=True,
@@ -129,11 +126,10 @@ class Runner:
 
     def setup_model_path(self):
         self.model_path = os.path.join(self.save_path, self.search_space, "reptile" if self.is_reptile else "joint",
-                                       self.job_start_date)
+                                       self.job_start_date if not self.tuning_job else f"seed-{self.cs_seed}")
         os.makedirs(self.model_path, exist_ok=True)
 
-    @staticmethod
-    def get_configspace(seed=None):
+    def get_configspace(self, seed=None):
         """
         It builds the configuration space with the needed hyperparameters.
         It is easily possible to implement different types of hyperparameters.
@@ -154,17 +150,17 @@ class Runner:
         cs.add_hyperparameters([num_layers_decoder, d_model, num_heads, dff, num_layers_encoder])
 
         apply_scheduler = CSH.CategoricalHyperparameter('apply_scheduler', choices=["polynomial", "cosine", "None"])
-        meta_optimizer = CSH.CategoricalHyperparameter('meta_optimizer', choices=["adam", "radam", "sgd"])
         optimizer = CSH.CategoricalHyperparameter('optimizer', choices=["adam", "sgd"])
-        cs.add_hyperparameters([apply_scheduler, meta_optimizer, optimizer])
-
         rate = CSH.UniformFloatHyperparameter('dropout_rate', lower=0., upper=0.5, default_value=0.2)
         learning_rate = CSH.UniformFloatHyperparameter('learning_rate', lower=1e-6, upper=1e-1, default_value=1e-3,
                                                        log=True)
-        meta_learning_rate = CSH.UniformFloatHyperparameter('meta_learning_rate', lower=1e-6, upper=1e-1,
-                                                            default_value=1e-3, log=True)
-        cs.add_hyperparameters([rate, meta_learning_rate, learning_rate])
 
-        inner_steps = CSH.UniformIntegerHyperparameter('inner_steps', lower=1, upper=10, default_value=1)
-        cs.add_hyperparameters([inner_steps])
+        cs.add_hyperparameters([rate, optimizer, learning_rate, apply_scheduler])
+
+        if self.is_reptile:
+            meta_optimizer = CSH.CategoricalHyperparameter('meta_optimizer', choices=["adam", "radam", "sgd"])
+            meta_learning_rate = CSH.UniformFloatHyperparameter('meta_learning_rate', lower=1e-6, upper=1e-1,
+                                                            default_value=1e-3, log=True)
+            inner_steps = CSH.UniformIntegerHyperparameter('inner_steps', lower=2, upper=10, default_value=1)
+            cs.add_hyperparameters([meta_optimizer, meta_learning_rate, inner_steps])
         return cs

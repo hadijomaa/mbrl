@@ -16,7 +16,7 @@ if __name__ == "__main__":
     np.random.seed(args.model_seed)
     rn.seed(args.model_seed)
     tf.random.set_seed(args.model_seed)
-
+    args.reptile = bool(args.reptile)
     runner = Runner(args)
     runner.compile_model()
     runner.fit()
