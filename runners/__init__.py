@@ -131,6 +131,13 @@ class Runner:
                                        self.job_start_date if not self.tuning_job else f"seed-{self.cs_seed}")
         os.makedirs(self.model_path, exist_ok=True)
 
+        for file_name in os.listdir(self.model_path):
+            # construct full file path
+            file = os.path.join(self.model_path, file_name)
+            if os.path.isfile(file):
+                print('Deleting file:', file)
+                os.remove(file)
+
     def get_configspace(self, seed=None):
         """
         It builds the configuration space with the needed hyperparameters.
