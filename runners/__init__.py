@@ -42,6 +42,7 @@ class Runner:
             cs = self.get_configspace(seed=self.config["cs_seed"])
             cs = cs.sample_configuration().get_dictionary()
             self.config.update(cs)
+            self.cs_seed = self.config["cs_seed"]
 
         # hyperparameters
         self.num_layers_encoder = self.config["num_layers_encoder"]
