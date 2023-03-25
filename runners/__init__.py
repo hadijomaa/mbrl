@@ -44,7 +44,6 @@ class Runner:
             self.config.update(cs)
 
         # hyperparameters
-        self.inner_steps = self.config["inner_steps"]
         self.num_layers_encoder = self.config["num_layers_encoder"]
         self.num_layers_decoder = self.config["num_layers_decoder"]
         self.dropout_rate = self.config["dropout_rate"]
@@ -53,9 +52,12 @@ class Runner:
         self.dff = 2 ** self.config["dff"]
         self.apply_scheduler = self.config["apply_scheduler"]
         self.learning_rate = self.config["learning_rate"]
-        self.meta_learning_rate = self.config["meta_learning_rate"]
-        self.meta_optimizer = self.config["meta_optimizer"]
         self.optimizer = self.config["optimizer"]
+        self.inner_steps = 1
+        if self.is_reptile:
+            self.inner_steps = self.config["inner_steps"]
+            self.meta_learning_rate = self.config["meta_learning_rate"]
+            self.meta_optimizer = self.config["meta_optimizer"]
 
         self.setup_model_path()
         self.generate_meta_tasks()
