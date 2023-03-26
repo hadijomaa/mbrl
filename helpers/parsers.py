@@ -49,7 +49,7 @@ def get_runner_parser(parser=None):
                         help="Meta-batch size when querying tasks for meta-training")
     parser.add_argument('--seed', help='Dataset Generator Seed', type=int, default=0)
     parser.add_argument('--model_seed', help='Model Seed', type=int, default=0)
-    parser.add_argument('--epochs', type=int, default=5000, help='Number of epochs')
+    parser.add_argument('--epochs', type=int, default=1000, help='Number of epochs')
     parser.add_argument('--save_path', type=str, default="./checkpoints", help='Checkpoint base directory')
     return parser
 

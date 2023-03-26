@@ -13,19 +13,21 @@ envs=LookAhead
 
 cs_seed={cs_seed}
 reptile={reptile}
+search_space={search_space}
 source /home/fr/fr_fr/fr_hj1023/miniconda3/bin/activate $envs 
 
 cd /work/ws/nemo/fr_hj1023-LookAhead-0/mbrl || exit 
-python meta_tune.py --cs_seed $cs_seed --reptile $reptile
+python meta_tune.py --cs_seed $cs_seed --reptile $reptile --search_space $search_space
 
 """
 
 if __name__ == "__main__":
     rootdir = os.path.dirname(os.path.realpath(__file__))
 
-    from helpers.parsers import get_tuner_parser
+    from helpers.parsers import get_tuner_parser, get_hp_parser
 
     parser = get_tuner_parser()
+    parser = get_hp_parser(parser)
     args = parser.parse_args()
 
     # define sbatch folder
@@ -36,7 +38,8 @@ if __name__ == "__main__":
     # make folders
     [os.makedirs(_, exist_ok=True) for _ in [sbatchfolder, sbatchfolderoutput]]
 
-    model_path = os.path.join(f"{'reptile' if args.reptile == 1 else 'joint'}", f"cs_seed-{args.cs_seed}")
+    model_path = os.path.join(args.search_space, f"{'reptile' if args.reptile == 1 else 'joint'}",
+                              f"cs_seed-{args.cs_seed}")
 
     file_dir = os.path.join(sbatchfolder, model_path)
     output_dir = os.path.join(sbatchfolderoutput, model_path)
@@ -55,13 +58,8 @@ if __name__ == "__main__":
                              jobid1=job_id,
                              jobid2=job_id,
                              cs_seed=args.cs_seed,
-                             reptile=args.reptile)
+                             reptile=args.reptile,
+                             search_space=args.search_space)
 
     file.write(script + '\n')
     file.close()
-
-# for cv in 1; do for seed in $(seq 1000 1999) ; do for toy in toy; do for freeze in freeze; do for reset_final_layer in reset; do for innerupdates in n_batch_updates;
-# do msub /work/ws/nemo/fr_hj1023-UniTab-0/TabNet/scripts/sbatch/$toy/joint/contextunitab/$freeze/$reset_final_layer/$innerupdates/deterministic/seed-$seed/cv-$cv/train.sh; done;done;done;done;done; done
-
-
-# for cv in 1; do for seed in $(seq 0 2000) ; do for toy in realworld; do for freeze in freeze; do for reset_final_layer in reset; do cat /work/ws/nemo/fr_hj1023-UniTab-0/TabNet/scripts/sbatch/$toy/joint/transformer/$freeze/$reset_final_layer/seed-$seed/cv-$cv/train.sh; done;done;done;done;done
