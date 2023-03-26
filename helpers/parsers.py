@@ -13,6 +13,17 @@ def get_hp_parser(parser=None):
     return parser
 
 
+def get_pets_parser(parser=None):
+    if not parser:
+        parser = argparse.ArgumentParser()
+    parser.add_argument('--num_particles', type=int, default=10,
+                        help="Number of particles to be sampled from normal distribution")
+    parser.add_argument('--num_random_trajectories', type=int, default=20, help="Number of random trajectories sampled")
+    parser.add_argument('--horizon', type=int, default=5, help="Length of simulation rollout horizon")
+    parser.add_argument('--dataset_id', type=str, default='23', help="Dataset Id in the search space")
+    return parser
+
+
 def get_transformer_parser(parser=None):
     if not parser:
         parser = argparse.ArgumentParser()

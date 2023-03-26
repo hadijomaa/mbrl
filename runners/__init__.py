@@ -14,7 +14,7 @@ from loaders.HPGenerator import MetaTaskGenerator
 from modules.transformers import Transformer
 
 
-class Runner:
+class Runner(object):
 
     def __init__(self, args):
         self.model_path = None
@@ -27,9 +27,8 @@ class Runner:
         self.search_space = args.search_space
         self.seed = args.seed
         self.batch_size = args.batch_size
-        self.meta_batch_size = args.meta_batch_size
-        self.is_reptile = args.reptile
         self.epochs = args.epochs
+        self.is_reptile = args.reptile
 
         self.job_start_date = datetime.now().strftime('%Y-%m-%d-%H-%M-%S-%f')
 
@@ -60,21 +59,6 @@ class Runner:
             self.meta_learning_rate = self.config["meta_learning_rate"]
             self.meta_optimizer = self.config["meta_optimizer"]
 
-        self.setup_model_path()
-        self.generate_meta_tasks()
-        self.initialize_model()
-        with open(os.path.join(self.model_path, "config.json"), 'w') as f:
-            json.dump(self.config, f)
-
-    def generate_meta_tasks(self):
-        self.meta_train_tasks = MetaTaskGenerator(data_directory=self.data_directory, search_space_id=self.search_space,
-                                                  seed=self.seed, batch_size=self.batch_size, shuffle=True,
-                                                  inner_steps=self.inner_steps, mode="train")
-
-        self.meta_valid_tasks = MetaTaskGenerator(data_directory=self.data_directory, search_space_id=self.search_space,
-                                                  seed=self.seed, batch_size=self.batch_size, shuffle=True,
-                                                  inner_steps=self.inner_steps, mode="validation", fixed_context=True)
-
     def initialize_model(self):
         x = tf.keras.layers.Input(shape=(None, self.meta_train_tasks.n_features,))
         context = tf.keras.layers.Input(shape=(None, self.meta_train_tasks.n_features + 1,))
@@ -91,53 +75,6 @@ class Runner:
             optimizer = tf.keras.optimizers.SGD(learning_rate=self.learning_rate)
 
         self.model.compile(loss=losses.nll, optimizer=optimizer, metrics=[losses.log_var, losses.mse])
-
-    def fit(self):
-        callbacks = [
-            tf.keras.callbacks.ModelCheckpoint(filepath=os.path.join(self.model_path, "model"), save_weights_only=True,
-                                               monitor='val_loss', mode='min', save_best_only=True),
-            SaveLogsCallback(checkpoint_path=self.model_path, has_validation=True)]
-
-        if self.apply_scheduler == "polynomial":
-            callbacks += [tf.keras.callbacks.LearningRateScheduler(
-                tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=self.learning_rate,
-                                                              end_learning_rate=self.learning_rate / self.epochs,
-                                                              decay_steps=self.epochs, power=2, cycle=False),
-                verbose=0)]
-        elif self.apply_scheduler == "cosine":
-            callbacks += [tf.keras.callbacks.LearningRateScheduler(
-                tf.keras.optimizers.schedules.CosineDecayRestarts(initial_learning_rate=self.learning_rate,
-                                                                  first_decay_steps=self.epochs),
-                verbose=0)]
-        else:
-            pass
-
-        if self.is_reptile:
-            if self.meta_optimizer == "adam":
-                meta_optimizer = tf.keras.optimizers.Adam(learning_rate=self.meta_learning_rate)
-            elif self.meta_optimizer == "radam":
-                total_steps = self.epochs * len(self.meta_train_tasks.files["train"]) // self.inner_steps
-                meta_optimizer = tfa.optimizers.RectifiedAdam(lr=self.meta_learning_rate, total_steps=total_steps)
-            else:
-                meta_optimizer = tf.keras.optimizers.SGD(learning_rate=self.meta_learning_rate)
-
-            callbacks += [ReptileCallback(inner_steps=self.inner_steps, meta_batch_size=self.meta_batch_size,
-                                          outer_optimizer=meta_optimizer)]
-
-        self.model.fit(self.meta_train_tasks, validation_data=self.meta_valid_tasks, callbacks=callbacks,
-                       epochs=self.epochs)
-
-    def setup_model_path(self):
-        self.model_path = os.path.join(self.save_path, self.search_space, "reptile" if self.is_reptile else "joint",
-                                       self.job_start_date if not self.tuning_job else f"seed-{self.cs_seed}")
-        os.makedirs(self.model_path, exist_ok=True)
-
-        for file_name in os.listdir(self.model_path):
-            # construct full file path
-            file = os.path.join(self.model_path, file_name)
-            if os.path.isfile(file):
-                print('Deleting file:', file)
-                os.remove(file)
 
     def get_configspace(self, seed=None):
         """
@@ -170,7 +107,84 @@ class Runner:
         if self.is_reptile:
             meta_optimizer = CSH.CategoricalHyperparameter('meta_optimizer', choices=["adam", "radam", "sgd"])
             meta_learning_rate = CSH.UniformFloatHyperparameter('meta_learning_rate', lower=1e-6, upper=1e-1,
-                                                            default_value=1e-3, log=True)
+                                                                default_value=1e-3, log=True)
             inner_steps = CSH.UniformIntegerHyperparameter('inner_steps', lower=2, upper=10, default_value=1)
             cs.add_hyperparameters([meta_optimizer, meta_learning_rate, inner_steps])
         return cs
+
+    @staticmethod
+    def clear_path(model_path):
+        os.makedirs(model_path, exist_ok=True)
+
+        for file_name in os.listdir(model_path):
+            # construct full file path
+            file = os.path.join(model_path, file_name)
+            if os.path.isfile(file):
+                print('Deleting file:', file)
+                os.remove(file)
+
+    def prepare_callbacks(self, monitor="val_loss"):
+        callbacks = [
+            tf.keras.callbacks.ModelCheckpoint(filepath=os.path.join(self.model_path, "model"), save_weights_only=True,
+                                               monitor=monitor, mode='min', save_best_only=True),
+            SaveLogsCallback(checkpoint_path=self.model_path, has_validation=True)]
+
+        if self.apply_scheduler == "polynomial":
+            callbacks += [tf.keras.callbacks.LearningRateScheduler(
+                tf.keras.optimizers.schedules.PolynomialDecay(initial_learning_rate=self.learning_rate,
+                                                              end_learning_rate=self.learning_rate / self.epochs,
+                                                              decay_steps=self.epochs, power=2, cycle=False),
+                verbose=0)]
+        elif self.apply_scheduler == "cosine":
+            callbacks += [tf.keras.callbacks.LearningRateScheduler(
+                tf.keras.optimizers.schedules.CosineDecayRestarts(initial_learning_rate=self.learning_rate,
+                                                                  first_decay_steps=self.epochs),
+                verbose=0)]
+        else:
+            pass
+
+        return callbacks
+
+
+class MetaTrainer(Runner):
+
+    def __init__(self, args):
+        super(MetaTrainer, self).__init__(args)
+        self.meta_batch_size = args.meta_batch_size
+        self.generate_meta_tasks()
+        self.initialize_model()
+        self.setup_model_path()
+        with open(os.path.join(self.model_path, "config.json"), 'w') as f:
+            json.dump(self.config, f)
+
+    def setup_model_path(self):
+        self.model_path = os.path.join(self.save_path, self.search_space, "reptile" if self.is_reptile else "joint",
+                                       self.job_start_date if not self.tuning_job else f"seed-{self.cs_seed}")
+        self.clear_path(self.model_path)
+
+    def generate_meta_tasks(self):
+        self.meta_train_tasks = MetaTaskGenerator(data_directory=self.data_directory, search_space_id=self.search_space,
+                                                  seed=self.seed, batch_size=self.batch_size, shuffle=True,
+                                                  inner_steps=self.inner_steps, mode="train")
+
+        self.meta_valid_tasks = MetaTaskGenerator(data_directory=self.data_directory, search_space_id=self.search_space,
+                                                  seed=self.seed, batch_size=self.batch_size, shuffle=True,
+                                                  inner_steps=self.inner_steps, mode="validation", fixed_context=True)
+
+    def fit(self):
+        callbacks = self.prepare_callbacks()
+
+        if self.is_reptile:
+            if self.meta_optimizer == "adam":
+                meta_optimizer = tf.keras.optimizers.Adam(learning_rate=self.meta_learning_rate)
+            elif self.meta_optimizer == "radam":
+                total_steps = self.epochs * len(self.meta_train_tasks.files["train"]) // self.inner_steps
+                meta_optimizer = tfa.optimizers.RectifiedAdam(lr=self.meta_learning_rate, total_steps=total_steps)
+            else:
+                meta_optimizer = tf.keras.optimizers.SGD(learning_rate=self.meta_learning_rate)
+
+            callbacks += [ReptileCallback(inner_steps=self.inner_steps, meta_batch_size=self.meta_batch_size,
+                                          outer_optimizer=meta_optimizer)]
+
+        self.model.fit(self.meta_train_tasks, validation_data=self.meta_valid_tasks, callbacks=callbacks,
+                       epochs=self.epochs)

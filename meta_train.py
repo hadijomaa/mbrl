@@ -1,5 +1,5 @@
 from helpers import parsers
-from runners import Runner
+from runners import MetaTrainer
 import random as rn
 
 import numpy as np
@@ -14,8 +14,8 @@ if __name__ == "__main__":
     np.random.seed(args.model_seed)
     rn.seed(args.model_seed)
     tf.random.set_seed(args.model_seed)
-    args.reptile = bool(args.reptile)
-    runner = Runner(args)
+    args.reptile = False
+    runner = MetaTrainer(args)
     runner.compile_model()
     runner.fit()
 

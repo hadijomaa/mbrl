@@ -79,7 +79,7 @@ class Generator(tf.keras.utils.Sequence):
 
 
 class Task(tf.keras.utils.Sequence):
-    def __init__(self, seed=0, batch_size=1, shuffle=True):
+    def __init__(self, seed=0, batch_size=0, shuffle=True):
         """
         Constructor for the Task
 
@@ -90,7 +90,7 @@ class Task(tf.keras.utils.Sequence):
         """
         # the mode can be only changed by user
         self.mode = "meta"
-        self.indexes = None
+        self.indexes = dict()
         self.data = None
         self.targets = None
         self.name = None
@@ -108,13 +108,13 @@ class Task(tf.keras.utils.Sequence):
         """
         Query instance from dataset
         """
-        indexes = self.indexes[index * self.batch_size:(index + 1) * self.batch_size]
-        X = self.data[indexes].astype(np.float32)
-        y = self.targets[indexes]
-        if self.mode == "meta":
+        indexes = self.indexes[self.mode][index * self.batch_size:(index + 1) * self.batch_size]
+        X = self.data[self.mode][indexes].astype(np.float32)
+        y = self.targets[self.mode][indexes]
+        if self.mode in ["meta", "hpo"]:
             context_size_indices = self.get_context_indices(indexes)
-            context_X = np.stack([self.data[i] for i in context_size_indices])
-            context_y = np.stack([self.targets[i] for i in context_size_indices])
+            context_X = np.stack([self.data[self.mode][i] for i in context_size_indices])
+            context_y = np.stack([self.targets[self.mode][i] for i in context_size_indices])
             context = np.concatenate([context_X, context_y], axis=-1)
             return (context, np.expand_dims(X, axis=1)), y
 
@@ -125,25 +125,27 @@ class Task(tf.keras.utils.Sequence):
         Number of instances
         """
         if self.batch_size == 0:
-            self.batch_size = self.data.shape[0]
-        self.batch_size = min(self.batch_size, self.data.shape[0])
-        return self.data.shape[0] // self.batch_size
+            self.batch_size = self.data[self.mode].shape[0]
+        self.batch_size = min(self.batch_size, self.data[self.mode].shape[0])
+        return self.data[self.mode].shape[0] // self.batch_size
 
     @property
     def n_features(self) -> int:
-        return self.data.shape[1]
+        return self.data[self.mode].shape[1]
 
     def on_epoch_end(self):
         """
         Updates indexes after each epoch
         """
-        self.indexes = np.arange(self.data.shape[0]).tolist()
+        self.indexes[self.mode] = np.arange(self.data[self.mode].shape[0]).tolist()
         if self.shuffle:
-            self.randomizer.shuffle(self.indexes)
+            self.randomizer.shuffle(self.indexes[self.mode])
 
     def get_context_indices(self, indexes):
         context_size = self.context_length_randomizer.choice(100)
+        n_total = self.data[self.mode].shape[0]
         context_size_indices = list(map(
-            lambda value: self.context_choice_randomizer.choice(np.setdiff1d(np.arange(self.data.shape[0]), value),
-                                                                size=context_size, replace=False), indexes))
+            lambda value: self.context_choice_randomizer.choice(np.setdiff1d(np.arange(n_total), value),
+                                                                size=min(context_size, n_total), replace=False),
+            indexes))
         return context_size_indices

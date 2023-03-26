@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 import os
 from loaders import Task
@@ -35,6 +37,7 @@ class HPOTask(Task):
 
         """
         super(HPOTask, self).__init__(seed=seed, shuffle=shuffle, batch_size=batch_size)
+        self.evaluated_hps = None
         logging.info(f"Processing dataset {dataset_id} from search space {search_space_id}")
 
         self.dataset_id = dataset_id
@@ -73,8 +76,9 @@ class HPOTask(Task):
             with open(cache_path, 'wb') as f:
                 pickle.dump((X, self.info, y, self.target_info, self.initializations,
                              self.surrogate_stats, self.surrogate), f)
-        self.data = X
-        self.targets = y
+        self.n_total = X.shape[0]
+        self.data = {"meta": X}
+        self.targets = {"meta": y}
         self.on_epoch_end()
 
     def from_pickled_id(self):
@@ -112,6 +116,24 @@ class HPOTask(Task):
             return context_size_indices
         else:
             return super().get_context_indices(indexes=indexes)
+
+    def update_hpo_mode(self, seed):
+        context_size_indices = self.initializations[f"test{seed}"]
+        self.evaluated_hps = copy.deepcopy(context_size_indices)
+        self.data.update({"hpo": self.data["meta"][context_size_indices]})
+        self.targets.update({"hpo": self.targets["meta"][context_size_indices]})
+
+    @property
+    def candidate_pool(self):
+        return np.setdiff1d(np.arange(self.n_total), self.evaluated_hps)
+
+    def log_evaluation(self, x):
+        self.evaluated_hps.append(x)
+
+    @property
+    def state(self):
+        return np.concatenate([self.data[self.mode][self.evaluated_hps], self.targets[self.mode][self.evaluated_hps]],
+                              axis=1)
 
 
 if __name__ == "__main__":
