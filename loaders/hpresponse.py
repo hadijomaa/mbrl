@@ -120,20 +120,25 @@ class HPOTask(Task):
     def update_hpo_mode(self, seed):
         context_size_indices = self.initializations[f"test{seed}"]
         self.evaluated_hps = copy.deepcopy(context_size_indices)
-        self.data.update({"hpo": self.data["meta"][context_size_indices]})
-        self.targets.update({"hpo": self.targets["meta"][context_size_indices]})
+        self.do_trial()
+
+    def do_trial(self):
+        self.data.update({"hpo": self.data["meta"][self.evaluated_hps]})
+        self.targets.update({"hpo": self.targets["meta"][self.evaluated_hps]})
 
     @property
     def candidate_pool(self):
-        return np.setdiff1d(np.arange(self.n_total), self.evaluated_hps)
+        return np.setdiff1d(np.arange(self.n_total), self.evaluated_hps).tolist()
 
     def log_evaluation(self, x):
         self.evaluated_hps.append(x)
 
     @property
     def state(self):
-        return np.concatenate([self.data[self.mode][self.evaluated_hps], self.targets[self.mode][self.evaluated_hps]],
-                              axis=1)
+        return np.concatenate([self.data["meta"][self.evaluated_hps], self.targets["meta"][self.evaluated_hps]], axis=1)
+
+    def utility_function(self, index):
+        return self.data["meta"][index]
 
 
 if __name__ == "__main__":

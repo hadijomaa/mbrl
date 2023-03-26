@@ -18,5 +18,6 @@ if __name__ == "__main__":
     tf.random.set_seed(args.model_seed)
     args.reptile = False
     runner = Tester(args)
-    runner.perform_hpo(1, None)
+
+    runner.perform_hpo(20)
 
