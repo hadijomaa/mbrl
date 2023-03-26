@@ -108,7 +108,9 @@ class Task(tf.keras.utils.Sequence):
         """
         Query instance from dataset
         """
-        indexes = self.indexes[self.mode][index * self.batch_size:(index + 1) * self.batch_size]
+        indexes = self.indexes[self.mode]
+        if self.mode == "meta":
+            indexes = indexes[index * self.batch_size:(index + 1) * self.batch_size]
         X = self.data[self.mode][indexes].astype(np.float32)
         y = self.targets[self.mode][indexes]
         if self.mode in ["meta", "hpo"]:
@@ -127,7 +129,7 @@ class Task(tf.keras.utils.Sequence):
         if self.batch_size == 0:
             self.batch_size = self.data[self.mode].shape[0]
         self.batch_size = min(self.batch_size, self.data[self.mode].shape[0])
-        return self.data[self.mode].shape[0] // self.batch_size
+        return 1 if self.mode == "hpo" else self.data[self.mode].shape[0] // self.batch_size
 
     @property
     def n_features(self) -> int:
@@ -146,6 +148,6 @@ class Task(tf.keras.utils.Sequence):
         n_total = self.data[self.mode].shape[0]
         context_size_indices = list(map(
             lambda value: self.context_choice_randomizer.choice(np.setdiff1d(np.arange(n_total), value),
-                                                                size=min(context_size, n_total), replace=False),
+                                                                size=min(context_size, n_total -1), replace=False),
             indexes))
         return context_size_indices
