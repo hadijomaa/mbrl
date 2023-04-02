@@ -35,6 +35,6 @@ if __name__ == "__main__":
             results = pd.concat([results, pd.DataFrame(experiment_result.loc[best_epoch]).rename(
                 columns={best_epoch: f"seed-{args.cs_seed}"})], axis=1)
         except Exception as e:
-            print(e, args.seed)
+            print(f"Raised exception {e} for experiment of seed {args.cs_seed}")
 
     results.to_csv(os.path.join(rootdir, "collected", f"{args.search_space}-{desc}.csv"))
