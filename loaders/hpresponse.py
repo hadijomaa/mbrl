@@ -82,7 +82,7 @@ class HPOTask(Task):
         self.data = {"meta": X}
         # normalize targets
         if self.normalize:
-            y = self.normalize(y)
+            y = self.normalize_response(y)
         self.targets = {"meta": y}
         self.on_epoch_end()
 
@@ -146,7 +146,7 @@ class HPOTask(Task):
         return self.data["meta"][index]
 
     @staticmethod
-    def normalize(y, y_min=None, y_max=None):
+    def normalize_response(y, y_min=None, y_max=None):
 
         if y_min is None:
             return (y - np.min(y)) / (np.max(y) - np.min(y))
