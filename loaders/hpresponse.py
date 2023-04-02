@@ -17,7 +17,7 @@ class HPOTask(Task):
     initialization_randomizer = None
 
     def __init__(self, dataset_id, search_space_id, output_folder, seed, shuffle, batch_size, fixed_context=False,
-                 **kwargs):
+                 normalize=True, **kwargs):
         """
         Constructor for the Task Class
 
@@ -29,6 +29,7 @@ class HPOTask(Task):
             batch_size (int): size of batch
             shuffle (bool): shuffle instances after each epoch
             fixed_context (bool): indicator if we use the initialization seeds as context
+            normalize (bool): Normalize response surface
         Keyword Args:
             data (dict): dictionary that includes the configuration space "X" and function evaluations "y"
             seeds (dict): dictionary that includes initializations for Bayesian Optimization
@@ -44,6 +45,7 @@ class HPOTask(Task):
         self.search_space_id = search_space_id
         self.folder = output_folder
         self.fixed_context = fixed_context
+        self.normalize = normalize
         if self.fixed_context:
             self.initialization_randomizer = np.random.RandomState(seed=seed)
 
@@ -78,6 +80,9 @@ class HPOTask(Task):
                              self.surrogate_stats, self.surrogate), f)
         self.n_total = X.shape[0]
         self.data = {"meta": X}
+        # normalize targets
+        if self.normalize:
+            y = self.normalize(y)
         self.targets = {"meta": y}
         self.on_epoch_end()
 
@@ -139,6 +144,14 @@ class HPOTask(Task):
 
     def utility_function(self, index):
         return self.data["meta"][index]
+
+    @staticmethod
+    def normalize(y, y_min=None, y_max=None):
+
+        if y_min is None:
+            return (y - np.min(y)) / (np.max(y) - np.min(y))
+        else:
+            return (y - y_min) / (y_max - y_min)
 
 
 if __name__ == "__main__":
