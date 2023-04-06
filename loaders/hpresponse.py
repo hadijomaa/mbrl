@@ -39,6 +39,7 @@ class HPOTask(Task):
         """
         super(HPOTask, self).__init__(seed=seed, shuffle=shuffle, batch_size=batch_size)
         self.evaluated_hps = None
+        self.regret = None
         logging.info(f"Processing dataset {dataset_id} from search space {search_space_id}")
 
         self.dataset_id = dataset_id
@@ -125,11 +126,13 @@ class HPOTask(Task):
     def update_hpo_mode(self, seed):
         context_size_indices = self.initializations[f"test{seed}"]
         self.evaluated_hps = copy.deepcopy(context_size_indices)
+        self.regret = []
         self.do_trial()
 
     def do_trial(self):
         self.data.update({"hpo": self.data["meta"][self.evaluated_hps]})
         self.targets.update({"hpo": self.targets["meta"][self.evaluated_hps]})
+        self.regret.append(np.min(self.targets["hpo"]))
 
     @property
     def candidate_pool(self):

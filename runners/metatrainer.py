@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 
@@ -28,11 +29,12 @@ class MetaTrainer(Runner):
     def generate_meta_tasks(self):
         self.meta_train_tasks = MetaTaskGenerator(data_directory=self.data_directory, search_space_id=self.search_space,
                                                   seed=self.seed, batch_size=self.batch_size, shuffle=True,
-                                                  inner_steps=self.inner_steps, mode="train")
+                                                  inner_steps=self.inner_steps)
 
-        self.meta_valid_tasks = MetaTaskGenerator(data_directory=self.data_directory, search_space_id=self.search_space,
-                                                  seed=self.seed, batch_size=self.batch_size, shuffle=True,
-                                                  inner_steps=self.inner_steps, mode="validation", fixed_context=True)
+        self.meta_valid_tasks = copy.deepcopy(self.meta_train_tasks)
+        self.meta_valid_tasks.fixed_context = True
+        self.meta_valid_tasks.mode = "validation"
+        self.meta_valid_tasks.on_epoch_end()
 
     def fit(self):
         callbacks = self.prepare_callbacks()

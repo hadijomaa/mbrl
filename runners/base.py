@@ -119,11 +119,15 @@ class Runner(object):
                 print('Deleting file:', file)
                 os.remove(file)
 
-    def prepare_callbacks(self, monitor="val_loss", has_validation=True):
-        callbacks = [
-            tf.keras.callbacks.ModelCheckpoint(filepath=os.path.join(self.model_path, "model"), save_weights_only=True,
-                                               monitor=monitor, mode='min', save_best_only=True),
-            SaveLogsCallback(checkpoint_path=self.model_path, has_validation=has_validation)]
+    def prepare_callbacks(self, monitor="val_loss", has_validation=True, save_model=True, path=None):
+
+        path = self.model_path if path is None else path
+        callbacks = [SaveLogsCallback(checkpoint_path=path, has_validation=has_validation)]
+
+        if save_model:
+            callbacks.append(tf.keras.callbacks.ModelCheckpoint(filepath=os.path.join(path, "model"),
+                                                                save_weights_only=True, monitor=monitor, mode='min',
+                                                                save_best_only=True))
 
         if self.apply_scheduler == "polynomial":
             callbacks += [tf.keras.callbacks.LearningRateScheduler(

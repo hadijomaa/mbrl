@@ -3,10 +3,28 @@ import numpy as np
 
 
 class MPC(object):
+    """
+    Model Predictive Control Class
+    """
 
-    def __init__(self, model, candidate_pool, input_dim, num_particles, horizon, optimizer, utility_function, seed=0):
+    def __init__(self, model, candidate_pool, input_dim, num_particles, horizon, optimizer, utility_function,
+                 apply_lookahead=True, seed=0):
+        """
+        Initialize MPC Class
+
+        Args:
+            model (tf.keras.model): neural network model
+            candidate_pool (list): collection of actions that can be taken
+            input_dim (int): dimensionality of input space
+            num_particles (int): number of particles to be sampled
+            horizon (int): length of simulated rollout
+            optimizer (object): optimizer that produces a candidate solution
+            utility_function (lambda fn): function that maps vectors to indices
+            apply_lookahead (bool): Indicator to apply LookAhead
+            seed (int): random seed
+        """
         self.candidate_pool = copy.deepcopy(candidate_pool)
-        self.apply_lookahead = None
+        self.apply_lookahead = apply_lookahead
         self.action_buffer = None
         self.model = model
         self.optimizer = optimizer
@@ -28,20 +46,21 @@ class MPC(object):
         """
 
         cost_function = lambda acs: self._compile_cost(action_sequence=acs, observation=observation)
-        solution, hp_index = self.optimizer.shoot(cost_function, candidate_pool=copy.deepcopy(self.candidate_pool),
-                                                  horizon=self.horizon,
-                                                  utility_function=self.utility_function,
-                                                  apply_lookahead=self.apply_lookahead)
+        hp_index, info = self.optimizer.shoot(cost_function, candidate_pool=copy.deepcopy(self.candidate_pool),
+                                              horizon=self.horizon,
+                                              utility_function=self.utility_function,
+                                              apply_lookahead=self.apply_lookahead)
 
-        self.candidate_pool.pop(self.candidate_pool.index(hp_index[0]))
-        return hp_index[0]
+        self.candidate_pool.pop(self.candidate_pool.index(hp_index))
+        return hp_index, info
 
     def _compile_cost(self, action_sequence, observation):
         # action_sequence --> 1 x (input_dim x horizon)
         # t = obs.shape[0]
+        # nopt = number of random trajectories
         nopt = action_sequence.shape[0]
         pred_regret = np.ones([nopt, self.num_particles])
-        actual_regret = np.ones([nopt, self.horizon])
+        actual_regret = np.ones([nopt, self.horizon, self.num_particles])
         # nopt x plan_hor x input_dim ------ nopt = 1
         action_sequence = np.reshape(action_sequence, [-1, self.horizon, self.input_dim])
         # horizon x nopt x 1 x input_dim
@@ -53,7 +72,7 @@ class MPC(object):
         # (nopt*particles)xtx(input_dim+1) ---> batch ?
         observation = np.tile(observation[None], [nopt * self.num_particles, 1, 1])
 
-        def continue_prediction(t, *args):
+        def continue_prediction(t):
             return np.less(t, self.horizon)
 
         def iteration(current_time_step, current_regret, current_observation, action_regret):
@@ -70,13 +89,14 @@ class MPC(object):
             next_performance = np.reshape(next_performance, [-1, self.num_particles])
             # regret bounded between 0 and 1
             next_regret = np.clip(1 - next_performance, a_min=0, a_max=1)
-            action_regret[:, current_time_step:current_time_step + 1] = np.mean(next_regret, 1, keepdims=True)
-            return current_time_step + 1, np.minimum(current_regret, next_regret), next_observation, action_regret
+            action_regret[:, current_time_step:current_time_step + 1, :] = np.expand_dims(next_regret, axis=1)
+            return current_time_step + 1, np.minimum(current_regret, next_regret), \
+                next_observation, action_regret
 
         t = 0
         while continue_prediction(t):
             t, pred_regret, observation, actual_regret = iteration(t, pred_regret, observation, actual_regret)
-        return np.mean(pred_regret, axis=1), actual_regret
+        return actual_regret
 
     def _predict_next_obs(self, observation, action_sequence):
         # acs --> (particles*nopt) x input_dim

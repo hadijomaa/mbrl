@@ -1,10 +1,13 @@
 import copy
 
 import numpy as np
+from scipy import stats
 
 
 class RandomShooter(object):
-
+    """
+    Random Shooting Class
+    """
     def __init__(self, num_random_trajectories, seed=0):
         """
         Initialize the Optimizer Class
@@ -39,12 +42,21 @@ class RandomShooter(object):
         # get hyperparameter representation from indexes
         samples = utility_function(np.array(indexes))
         # perform simulated rollout
-        costs, trajectory_regret = cost_function(samples)
+        info = dict()
+        action_particle_regret = cost_function(samples)
+        # action regret is num_random_trajectories x horizon x particles
+        # average over particles --> num_random_trajectories x horizon
+        # calculate regret here
+        action_regret = action_particle_regret.mean(axis=-1)
+        trajectory_cost = action_regret.min(axis=1)
+        info["max_trajectory_regret"] = max(trajectory_cost)
+        info["best_expected_horizon"] = int(stats.mode(action_regret.argmin(axis=1), keepdims=False).mode.item())
+        lowest_cost = np.argmin(trajectory_cost)
+        best_trajectory_indexes = indexes[lowest_cost]
+        info["expected_regret"] = action_regret[lowest_cost][0]
+        info["rollout_regret"] = np.min(action_regret[lowest_cost])
         if apply_lookahead:
-            min_regret, min_idx = np.min(trajectory_regret, 1), np.argmin(trajectory_regret, 1)
-            min_between_traj = np.argmin(min_regret)
-            indexes = np.array(indexes)[min_between_traj, min_idx[min_between_traj]]
-            samples = utility_function(np.array(indexes.reshape(-1, 1)))
-            return samples[0][None], [indexes]
-
-        return samples[np.argmin(costs)][None], indexes[np.argmin(costs)]
+            n = np.argmin(best_trajectory_indexes)
+        else:
+            n = 0
+        return best_trajectory_indexes[n], info

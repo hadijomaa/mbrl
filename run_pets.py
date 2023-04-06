@@ -9,7 +9,7 @@ import tensorflow as tf
 if __name__ == "__main__":
     parser = parsers.get_runner_parser()
     parser = parsers.get_hp_parser(parser=parser)
-    parser = parsers.get_transformer_parser(parser=parser)
+    parser = parsers.get_tuner_parser(parser=parser)
     parser = parsers.get_pets_parser(parser=parser)
     args = parser.parse_args()
 
@@ -17,7 +17,8 @@ if __name__ == "__main__":
     rn.seed(args.model_seed)
     tf.random.set_seed(args.model_seed)
     args.reptile = False
+    args.apply_lookahead = bool(args.apply_lookahead)
     runner = Tester(args)
 
-    runner.perform_hpo(20)
+    runner.perform_hpo(args.num_trials)
 

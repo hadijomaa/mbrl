@@ -18,10 +18,13 @@ def get_pets_parser(parser=None):
         parser = argparse.ArgumentParser()
     parser.add_argument('--num_particles', type=int, default=10,
                         help="Number of particles to be sampled from normal distribution")
-    parser.add_argument('--num_random_trajectories', type=int, default=20, help="Number of random trajectories sampled")
+    parser.add_argument('--num_random_trajectories', type=int, default=100,
+                        help="Number of random trajectories sampled")
     parser.add_argument('--horizon', type=int, default=5, help="Length of simulation rollout horizon")
     parser.add_argument('--mpc_seed', type=int, default=5, help="Random seed of optimizer")
     parser.add_argument('--dataset_id', type=str, default='23', help="Dataset Id in the search space")
+    parser.add_argument('--num_trials', type=int, default=100, help="Number of trials")
+    parser.add_argument('--apply_lookahead', type=int, default=0, choices=[0,1], help="Indicator to apply LookAhead")
     return parser
 
 
@@ -61,8 +64,9 @@ def get_runner_parser(parser=None):
                         help="Meta-batch size when querying tasks for meta-training")
     parser.add_argument('--seed', help='Dataset Generator Seed', type=int, default=0)
     parser.add_argument('--model_seed', help='Model Seed', type=int, default=0)
-    parser.add_argument('--epochs', type=int, default=5, help='Number of epochs')
-    parser.add_argument('--save_path', type=str, default="./checkpoints", help='Checkpoint base directory')
+    parser.add_argument('--epochs', type=int, default=1000, help='Number of epochs')
+    parser.add_argument('--save_path', type=str, default="checkpoints", help='Checkpoint base directory')
+    parser.add_argument('--log_path', type=str, default="results", help='Directory to store HPO results')
     return parser
 
 
