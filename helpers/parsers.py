@@ -24,7 +24,11 @@ def get_pets_parser(parser=None):
     parser.add_argument('--mpc_seed', type=int, default=5, help="Random seed of optimizer")
     parser.add_argument('--dataset_id', type=str, default='23', help="Dataset Id in the search space")
     parser.add_argument('--num_trials', type=int, default=100, help="Number of trials")
-    parser.add_argument('--apply_lookahead', type=int, default=0, choices=[0,1], help="Indicator to apply LookAhead")
+    parser.add_argument('--apply_lookahead', type=int, default=0, choices=[0, 1], help="Indicator to apply LookAhead")
+    parser.add_argument('--inference_optimizer', type=str, default="sgd", choices=["adam", "sgd"],
+                        help='inference optimizer')
+    parser.add_argument('--inference_learning_rate', type=float, default=1e-3,
+                        help='learning rate for inference updates')
     return parser
 
 

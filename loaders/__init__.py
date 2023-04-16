@@ -133,7 +133,7 @@ class Task(tf.keras.utils.Sequence):
 
     @property
     def n_features(self) -> int:
-        return self.data[self.mode].shape[1]
+        return self.data["meta"].shape[1]
 
     def on_epoch_end(self):
         """

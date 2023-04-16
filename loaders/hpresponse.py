@@ -30,6 +30,7 @@ class HPOTask(Task):
             shuffle (bool): shuffle instances after each epoch
             fixed_context (bool): indicator if we use the initialization seeds as context
             normalize (bool): Normalize response surface
+
         Keyword Args:
             data (dict): dictionary that includes the configuration space "X" and function evaluations "y"
             seeds (dict): dictionary that includes initializations for Bayesian Optimization

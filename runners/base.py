@@ -5,12 +5,13 @@ import ConfigSpace as CS
 import ConfigSpace.hyperparameters as CSH
 import tensorflow as tf
 
-import losses
 from callbacks.metrics import SaveLogsCallback
 from modules.transformers import Transformer
+import tensorflow_addons as tfa
 
 
 class Runner(object):
+    inference = False
 
     def __init__(self, args):
         self.model_path = None
@@ -65,12 +66,22 @@ class Runner(object):
         self.model = tf.keras.Model(inputs=[context, x], outputs=transformer)
 
     def compile_model(self):
-        if self.optimizer == "adam":
-            optimizer = tf.keras.optimizers.Adam(learning_rate=self.learning_rate, beta_1=0.)
-        else:
-            optimizer = tf.keras.optimizers.SGD(learning_rate=self.learning_rate)
+        raise NotImplementedError
 
-        self.model.compile(loss=losses.nll, optimizer=optimizer, metrics=[losses.log_var, losses.mse])
+    def get_optimizer(self, optimizer=None, learning_rate=None):
+        if not self.inference:
+            optimizer = self.optimizer
+            learning_rate = self.learning_rate
+
+        if optimizer == "adam":
+            optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate, beta_1=0.)
+        elif optimizer == "sgd":
+            optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate)
+        elif optimizer == "radam":
+            optimizer = tfa.optimizers.RectifiedAdam(lr=learning_rate, total_steps=self.epochs)
+        else:
+            raise f"{optimizer} not recognized"
+        return optimizer
 
     def get_configspace(self, seed=None):
         """

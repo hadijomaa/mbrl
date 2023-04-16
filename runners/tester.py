@@ -2,6 +2,7 @@ import json
 import os
 
 import pandas as pd
+import losses
 
 from controllers.optimizer import RandomShooter
 from controllers.mpc import MPC
@@ -13,6 +14,8 @@ OUTPUT_FOLDER = "hpob/processed"
 
 class Tester(Runner):
 
+    inference = True
+
     def __init__(self, args):
         super(Tester, self).__init__(args)
         self.shooter = None
@@ -20,6 +23,8 @@ class Tester(Runner):
         self.controller = None
         self.task = None
         self.num_random_trajectories = args.num_random_trajectories
+        self.inference_optimizer = args.inference_optimizer
+        self.inference_learning_rate = args.inference_learning_rate
         self.mpc_seed = args.mpc_seed
         self.num_particles = args.num_particles
         self.horizon = args.horizon
@@ -29,7 +34,8 @@ class Tester(Runner):
         self.generate_tasks()
         self.log_path = os.path.join(self.rootdir, args.log_path, self.search_space, f"horizon-{self.horizon}",
                                      f"trajectories-{self.num_random_trajectories}", f"particles-{self.num_particles}",
-                                     f"{'LookAhead' if self.apply_lookahead else 'MPC'}",
+                                     f"{'LookAhead' if self.apply_lookahead else 'MPC'}", self.inference_optimizer,
+                                     f"lr-{self.inference_learning_rate}",
                                      f"mpc-{self.mpc_seed}", self.dataset_id)
         os.makedirs(self.log_path, exist_ok=True)
         with open(os.path.join(self.log_path, "config.json"), 'w') as f:
@@ -100,3 +106,7 @@ class Tester(Runner):
     @property
     def n_features(self):
         return self.task.n_features
+
+    def compile_model(self):
+        optimizer = self.get_optimizer(optimizer=self.inference_optimizer, learning_rate=self.inference_learning_rate)
+        self.model.compile(loss=losses.nll, optimizer=optimizer, metrics=[losses.log_var, losses.mse])

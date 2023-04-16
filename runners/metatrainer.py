@@ -5,12 +5,14 @@ import os
 import tensorflow as tf
 import tensorflow_addons as tfa
 
+import losses
 from callbacks.reptile import ReptileCallback
 from loaders.HPGenerator import MetaTaskGenerator
 from runners import Runner
 
 
 class MetaTrainer(Runner):
+    inference = False
 
     def __init__(self, args):
         super(MetaTrainer, self).__init__(args)
@@ -57,3 +59,7 @@ class MetaTrainer(Runner):
     @property
     def n_features(self):
         return self.meta_train_tasks.n_features
+
+    def compile_model(self):
+        optimizer = self.get_optimizer()
+        self.model.compile(loss=losses.nll, optimizer=optimizer, metrics=[losses.log_var, losses.mse])
