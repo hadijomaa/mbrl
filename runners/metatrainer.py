@@ -54,7 +54,7 @@ class MetaTrainer(Runner):
                                           outer_optimizer=meta_optimizer)]
 
         self.model.fit(self.meta_train_tasks, validation_data=self.meta_valid_tasks, callbacks=callbacks,
-                       epochs=self.epochs)
+                       epochs=self.epochs, verbose=0)
 
     @property
     def n_features(self):
