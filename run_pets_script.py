@@ -49,9 +49,9 @@ if __name__ == "__main__":
     # make folders
     [os.makedirs(_, exist_ok=True) for _ in [sbatchfolder, sbatchfolderoutput]]
 
-    model_path = os.path.join(args.search_space, f"{'reptile' if args.reptile == 1 else 'joint'}", "test",
-                              f"horizon-{args.horizon}", f"trajectories-{args.num_random_trajectories}",
-                              f"particles-{args.num_particles}",
+    model_path = os.path.join(args.search_space, f"{'reptile' if args.reptile == 1 else 'joint'}",
+                              f"cs_seed-{args.cs_seed}", "test", f"horizon-{args.horizon}",
+                              f"trajectories-{args.num_random_trajectories}", f"particles-{args.num_particles}",
                               f"{'LookAhead' if args.apply_lookahead == 1 else 'MPC'}", f"mpc-{args.mpc_seed}")
     file_dir = os.path.join(sbatchfolder, model_path)
     output_dir = os.path.join(sbatchfolderoutput, model_path)
