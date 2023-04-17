@@ -11,7 +11,7 @@ class SaveLogsCallback(tf.keras.callbacks.Callback):
         self.checkpoint_path = checkpoint_path
         self.has_validation = has_validation
 
-        columns = ["loss", "log_var", "mse"]
+        columns = ["loss", "log_var", "mean_squared_error"]
         if has_validation:
             columns += [f"val_{c}" for c in columns]
 
