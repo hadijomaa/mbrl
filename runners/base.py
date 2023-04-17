@@ -130,10 +130,15 @@ class Runner(object):
                 print('Deleting file:', file)
                 os.remove(file)
 
-    def prepare_callbacks(self, monitor="val_loss", has_validation=True, save_model=True, path=None):
+    def prepare_callbacks(self, monitor="val_loss", has_validation=True, save_model=True, path=None,
+                          early_stopping=False):
 
         path = self.model_path if path is None else path
         callbacks = [SaveLogsCallback(checkpoint_path=path, has_validation=has_validation)]
+
+        if early_stopping:
+            callbacks.append(tf.keras.callbacks.EarlyStopping(monitor=monitor, patience=16, restore_best_weights=True,
+                                                              min_delta=1e-4))
 
         if save_model:
             callbacks.append(tf.keras.callbacks.ModelCheckpoint(filepath=os.path.join(path, "model"),

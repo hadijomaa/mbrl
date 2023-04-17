@@ -62,4 +62,5 @@ class MetaTrainer(Runner):
 
     def compile_model(self):
         optimizer = self.get_optimizer()
-        self.model.compile(loss=losses.nll, optimizer=optimizer, metrics=[losses.log_var, losses.mse])
+        self.model.compile(loss=losses.NegativeLogLikelihood(), optimizer=optimizer,
+                           metrics=[losses.LogVar(), losses.MeanSquaredError()])

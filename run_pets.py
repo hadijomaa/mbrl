@@ -19,6 +19,5 @@ if __name__ == "__main__":
     args.reptile = False
     args.apply_lookahead = bool(args.apply_lookahead)
     runner = Tester(args)
-
     runner.perform_hpo(args.num_trials)
 

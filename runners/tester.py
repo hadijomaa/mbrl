@@ -57,7 +57,8 @@ class Tester(Runner):
 
     def fit(self):
         print("Model being trained ...")
-        callbacks = self.prepare_callbacks(monitor="loss", has_validation=False, save_model=False, path=self.log_path)
+        callbacks = self.prepare_callbacks(monitor="log_var", has_validation=False, save_model=False,
+                                           path=self.log_path, early_stopping=True)
         self.model.fit(self.task, callbacks=callbacks, epochs=self.epochs, verbose=0)
 
     def design_controller(self):
@@ -109,4 +110,5 @@ class Tester(Runner):
 
     def compile_model(self):
         optimizer = self.get_optimizer(optimizer=self.inference_optimizer, learning_rate=self.inference_learning_rate)
-        self.model.compile(loss=losses.nll, optimizer=optimizer, metrics=[losses.log_var, losses.mse])
+        self.model.compile(loss=losses.NegativeLogLikelihood(), optimizer=optimizer,
+                           metrics=[losses.LogVar(), losses.MeanSquaredError()])
