@@ -22,10 +22,11 @@ horizon={horizon}
 mpc_seed={mpc_seed}
 num_trials={num_trials}
 apply_lookahead={apply_lookahead}
+load_pretrained={load_pretrained}
 source /home/fr/fr_fr/fr_hj1023/miniconda3/bin/activate $envs 
    
 cd /work/ws/nemo/fr_hj1023-LookAhead-0/mbrl || exit 
-python run_pets.py --cs_seed $cs_seed --reptile $reptile --search_space $search_space --horizon $horizon --mpc_seed $mpc_seed --num_trials $num_trials --dataset_id $dataset_id --num_particles $num_particles --num_random_trajectories $num_random_trajectories --apply_lookahead $apply_lookahead
+python run_pets.py --load_pretrained $load_pretrained --cs_seed $cs_seed --reptile $reptile --search_space $search_space --horizon $horizon --mpc_seed $mpc_seed --num_trials $num_trials --dataset_id $dataset_id --num_particles $num_particles --num_random_trajectories $num_random_trajectories --apply_lookahead $apply_lookahead
 
 """
 
@@ -50,6 +51,7 @@ if __name__ == "__main__":
     [os.makedirs(_, exist_ok=True) for _ in [sbatchfolder, sbatchfolderoutput]]
 
     model_path = os.path.join(args.search_space, f"{'reptile' if args.reptile == 1 else 'joint'}",
+                              "pre-trained" if args.load_pretrained == 1 else "random-initialization",
                               f"cs_seed-{args.cs_seed}", "test", f"horizon-{args.horizon}",
                               f"trajectories-{args.num_random_trajectories}", f"particles-{args.num_particles}",
                               f"{'LookAhead' if args.apply_lookahead == 1 else 'MPC'}", f"mpc-{args.mpc_seed}")
@@ -81,7 +83,8 @@ if __name__ == "__main__":
                                  horizon=args.horizon,
                                  mpc_seed=args.mpc_seed,
                                  num_trials=args.num_trials,
-                                 apply_lookahead=args.apply_lookahead
+                                 apply_lookahead=args.apply_lookahead,
+                                 load_pretrained=args.load_pretrained
                                  )
         file_name = f"{dataset_id}.sh"
         file = open(os.path.join(file_dir, file_name), 'w')
