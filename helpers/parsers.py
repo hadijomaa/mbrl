@@ -29,7 +29,7 @@ def get_pets_parser(parser=None):
                         help='inference optimizer')
     parser.add_argument('--inference_learning_rate', type=float, default=1e-3,
                         help='learning rate for inference updates')
-    parser.add_argument('--load_pretrained', type=int, default=0, choices=[0, 1], help='load pre-trained model')
+    parser.add_argument('--load_pretrained', type=int, default=1, choices=[0, 1], help='load pre-trained model')
     return parser
 
 
@@ -69,7 +69,7 @@ def get_runner_parser(parser=None):
                         help="Meta-batch size when querying tasks for meta-training")
     parser.add_argument('--seed', help='Dataset Generator Seed', type=int, default=0)
     parser.add_argument('--model_seed', help='Model Seed', type=int, default=0)
-    parser.add_argument('--epochs', type=int, default=1000, help='Number of epochs')
+    parser.add_argument('--epochs', type=int, default=200, help='Number of epochs')
     parser.add_argument('--save_path', type=str, default="checkpoints", help='Checkpoint base directory')
     parser.add_argument('--log_path', type=str, default="results", help='Directory to store HPO results')
     return parser
