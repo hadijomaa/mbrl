@@ -29,6 +29,7 @@ def get_pets_parser(parser=None):
                         help='inference optimizer')
     parser.add_argument('--inference_learning_rate', type=float, default=1e-3,
                         help='learning rate for inference updates')
+    parser.add_argument('--load_pretrained', type=int, default=0, choices=[0, 1], help='load pre-trained model')
     return parser
 
 

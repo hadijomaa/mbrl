@@ -1,5 +1,6 @@
 import json
 import os
+import copy
 
 import pandas as pd
 import losses
@@ -18,6 +19,7 @@ class Tester(Runner):
 
     def __init__(self, args):
         super(Tester, self).__init__(args)
+        self.random_weights = None
         self.shooter = None
         self.utility_function = None
         self.controller = None
@@ -30,13 +32,15 @@ class Tester(Runner):
         self.horizon = args.horizon
         self.apply_lookahead = args.apply_lookahead
         self.dataset_id = args.dataset_id
+        self.load_pretrained = args.load_pretrained
         self.setup_model_path()
         self.generate_tasks()
-        self.log_path = os.path.join(self.rootdir, args.log_path, self.search_space, f"horizon-{self.horizon}",
+        self.log_path = os.path.join(self.rootdir, args.log_path,
+                                     "pre-trained" if self.load_pretrained else "random-initialization",
+                                     self.search_space, f"horizon-{self.horizon}",
                                      f"trajectories-{self.num_random_trajectories}", f"particles-{self.num_particles}",
                                      f"{'LookAhead' if self.apply_lookahead else 'MPC'}", self.inference_optimizer,
-                                     f"lr-{self.inference_learning_rate}",
-                                     f"mpc-{self.mpc_seed}", self.dataset_id)
+                                     f"lr-{self.inference_learning_rate}", f"mpc-{self.mpc_seed}", self.dataset_id)
         os.makedirs(self.log_path, exist_ok=True)
         with open(os.path.join(self.log_path, "config.json"), 'w') as f:
             json.dump(self.config, f)
@@ -52,8 +56,15 @@ class Tester(Runner):
         self.clear_path(self.model_path)
 
     def load_model(self):
-        print("Loading pre-trained model")
-        self.model.load_weights(os.path.join(self.model_path, "..", "model"))
+        if self.random_weights is None:
+            self.random_weights = copy.deepcopy(self.model.get_weights())
+
+        if self.load_pretrained:
+            print("Loading pre-trained model")
+            self.model.load_weights(os.path.join(self.model_path, "..", "model"))
+        else:
+            print("Loading random initialization")
+            self.model.set_weights(self.random_weights)
 
     def fit(self):
         print("Model being trained ...")
@@ -75,10 +86,12 @@ class Tester(Runner):
         print(f"Starting HPO for Dataset Id: {self.dataset_id}")
         results = pd.DataFrame()
         actions = pd.DataFrame()
+        expectations = pd.DataFrame()
         self.initialize_model()
         for seed in range(5):
             self.task.update_hpo_mode(seed=seed)
             self.design_controller()
+            seed_run_info = {}
             for t in range(number_of_trials):
                 print(f"Trial {t + 1}/{number_of_trials} | Seed {seed + 1}/5")
                 self.task.on_epoch_end()
@@ -98,11 +111,17 @@ class Tester(Runner):
                 if self.task.regret[-1] == 0:
                     print("Breaking optimization because Global optimum found!")
                     break
+                seed_run_info.update({t: info})
                 print("------------------")
             results = pd.concat([results, pd.DataFrame(self.task.regret, columns=[f"seed-{seed}"])], axis=1)
             actions = pd.concat([actions, pd.DataFrame(self.task.evaluated_hps, columns=[f"seed-{seed}"])], axis=1)
+            seed_run_info = pd.DataFrame.from_dict(seed_run_info).transpose()
+            seed_run_info["seed"] = seed
+            expectations = pd.concat([expectations, seed_run_info], axis=0)
+        print(f"Saving to {self.log_path}!")
         results.to_csv(os.path.join(self.log_path, "results.csv"))
         actions.to_csv(os.path.join(self.log_path, "actions.csv"))
+        expectations.to_csv(os.path.join(self.log_path, "expectations.csv"))
 
     @property
     def n_features(self):

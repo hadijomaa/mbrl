@@ -18,6 +18,7 @@ if __name__ == "__main__":
     tf.random.set_seed(args.model_seed)
     args.reptile = False
     args.apply_lookahead = bool(args.apply_lookahead)
+    args.load_pretrained = bool(args.load_pretrained)
     runner = Tester(args)
     runner.perform_hpo(args.num_trials)
 
