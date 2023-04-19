@@ -15,7 +15,7 @@ if __name__ == "__main__":
                             args.search_space, f"horizon-{args.horizon}",
                             f"trajectories-{args.num_random_trajectories}", f"particles-{args.num_particles}",
                             f"{'LookAhead' if args.apply_lookahead  else 'MPC'}", args.inference_optimizer,
-                            args.inference_learning_rate, f"mpc-{args.mpc_seed}")
+                            f"{args.inference_learning_rate}", f"mpc-{args.mpc_seed}")
 
     for dataset_id in os.listdir(log_path):
         # construct full file path
