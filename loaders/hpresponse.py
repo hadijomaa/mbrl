@@ -40,7 +40,7 @@ class HPOTask(Task):
         """
         super(HPOTask, self).__init__(seed=seed, shuffle=shuffle, batch_size=batch_size)
         self.evaluated_hps = None
-        self.regret = None
+        self.regret = list()
         logging.info(f"Processing dataset {dataset_id} from search space {search_space_id}")
 
         self.dataset_id = dataset_id
@@ -85,6 +85,8 @@ class HPOTask(Task):
         # normalize targets
         if self.normalize:
             y = self.normalize_response(y)
+        self.y_max = max(y).item()
+        self.y_min = min(y).item()
         self.targets = {"meta": y}
         self.on_epoch_end()
 
@@ -133,7 +135,7 @@ class HPOTask(Task):
     def do_trial(self):
         self.data.update({"hpo": self.data["meta"][self.evaluated_hps]})
         self.targets.update({"hpo": self.targets["meta"][self.evaluated_hps]})
-        self.regret.append(np.min(self.targets["hpo"]))
+        self.regret.append(self.y_max - np.max(self.targets["hpo"]))
 
     @property
     def candidate_pool(self):

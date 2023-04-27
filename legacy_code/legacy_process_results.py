@@ -64,7 +64,8 @@ if __name__ == "__main__":
                 task_result = legacy_helpers.get_hpo_results(results_directory=results_directory, task=task,
                                                              search_space=search_space_id, method=method,
                                                              hpo_seed=hpo_seed)
-                task_result = 100 * np.concatenate([initial_seed_results[search_space_id][hpo_seed][task], task_result])
+                task_result = 100 * np.concatenate(
+                    [initial_seed_results[search_space_id][hpo_seed][task][-1:], task_result])
 
                 # collect method results
                 method_results = pd.concat(
@@ -73,12 +74,11 @@ if __name__ == "__main__":
             assert method_results.shape[1] == len(methods_to_evaluate)
 
             # make directory and save results in updated format
-            search_space_seed_path = os.path.join(data_directory, "legacy_results", search_space_id, f"{hpo_seed}",
+            search_space_seed_path = os.path.join(rootdir, "legacy_results", search_space_id, f"{hpo_seed}",
                                                   task)
             os.makedirs(search_space_seed_path, exist_ok=True)
-            method_results.to_csv(os.path.join(search_space_seed_path, "results.csv"))
-
             method_results = method_results.reindex(range(101)).fillna(0).round(6)
+            method_results.to_csv(os.path.join(search_space_seed_path, "results.csv"))
             method_results_rank = method_results.rank(1, method="min")
 
             seed_results_rank.append(method_results_rank)

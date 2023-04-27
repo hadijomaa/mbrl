@@ -15,7 +15,8 @@ if __name__ == "__main__":
     args.rerun = bool(args.rerun)
     args.load_pretrained = bool(args.load_pretrained)
 
-    log_path = os.path.join("./results", "pre-trained" if args.load_pretrained else "random-initialization",
+    rootdir = os.path.dirname(os.path.realpath(__file__))
+    log_path = os.path.join(rootdir, "results", "pre-trained" if args.load_pretrained else "random-initialization",
                             args.search_space, f"horizon-{args.horizon}",
                             f"trajectories-{args.num_random_trajectories}", f"particles-{args.num_particles}",
                             f"{'LookAhead' if args.apply_lookahead else 'MPC'}", args.inference_optimizer,
@@ -43,7 +44,8 @@ if __name__ == "__main__":
                                                    mpc=args.mpc_seed,
                                                    dataset_id=dataset_id,
                                                    )
-            print(f"Rerunning missing using command: {rerun_command}")
-            subprocess.run(rerun_command.split(" "))
+            if args.rerun:
+                print(f"Rerunning missing using command: {rerun_command}")
+                subprocess.run(rerun_command.split(" "))
     print(
 	f"found {found}; not found {not_found} , {args.num_particles}, {args.horizon}, {args.apply_lookahead}, {args.load_pretrained}, {args.num_random_trajectories}")
