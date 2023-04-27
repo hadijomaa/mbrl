@@ -73,7 +73,8 @@ if __name__ == "__main__":
             assert method_results.shape[1] == len(methods_to_evaluate)
 
             # make directory and save results in updated format
-            search_space_seed_path = os.path.join(data_directory, "legacy_results", search_space_id, f"{hpo_seed}")
+            search_space_seed_path = os.path.join(data_directory, "legacy_results", search_space_id, f"{hpo_seed}",
+                                                  task)
             os.makedirs(search_space_seed_path, exist_ok=True)
             method_results.to_csv(os.path.join(search_space_seed_path, "results.csv"))
 
