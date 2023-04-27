@@ -1,17 +1,22 @@
 import json
 import os
+import pickle
 
 import numpy as np
 import pandas as pd
-import pickle
 
-from helpers import legacy_helpers
+from helpers.parsers import get_hp_parser
+from legacy_code import legacy_helpers
 
 if __name__ == "__main__":
-    rootdir = ".."
-    search_space_id = "4796"
-    part = "test"
+    parser = get_hp_parser()
+    args = parser.parse_args()
+
+    rootdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../")
+    search_space_id = args.search_space
     data_directory = os.path.join(rootdir, "hpob")
+
+    part = "test"
 
     # load initializations
     with open(os.path.join(data_directory, "data", "bo-initializations.json"), "r") as f:
@@ -20,13 +25,14 @@ if __name__ == "__main__":
     with open(os.path.join(data_directory, "data", "hpob.json"), "r") as f:
         search_space_tasks = json.load(f)[search_space_id]
 
-    with open(os.path.join(data_directory, "results", "originals.pkl"), "rb") as f:
+    with open(os.path.join(data_directory, "legacy_results_v0", "originals.pkl"), "rb") as f:
         initial_seed_results = pickle.load(f)
 
     # get part files
     with open(os.path.join(data_directory, "splits", f"{part}.json"), "r") as f:
         files = json.load(f)[search_space_id]
 
+    # get benchmark methods
     single_task_methods = {"rs": "Random", "Bohamiann": "Bohamiann", "gpy": "GP", "DNGO": "DNGO",
                            "Deep Kernel GP": "Deep Kernel GP"}
     transfer_task_methods = {"RGPE": "RGPE", "quantile": "GCP+Prior", "DKLM": "DKLM", "FSBO": "FSBO",
@@ -64,6 +70,13 @@ if __name__ == "__main__":
                 method_results = pd.concat(
                     [method_results, pd.DataFrame(task_result, columns=[methods_to_evaluate[method]])], axis=1)
 
+            assert method_results.shape[1] == len(methods_to_evaluate)
+
+            # make directory and save results in updated format
+            search_space_seed_path = os.path.join(data_directory, "legacy_results", search_space_id, f"{hpo_seed}")
+            os.makedirs(search_space_seed_path, exist_ok=True)
+            method_results.to_csv(os.path.join(search_space_seed_path, "results.csv"))
+
             method_results = method_results.reindex(range(101)).fillna(0).round(6)
             method_results_rank = method_results.rank(1, method="min")
 
@@ -71,6 +84,7 @@ if __name__ == "__main__":
             seed_results.append(method_results)
 
         seed_results = pd.DataFrame(np.array(seed_results).mean(axis=0)[:100], columns=method_results.columns.tolist())
+
         seed_results_rank = pd.DataFrame(np.array(seed_results_rank).mean(axis=0)[:100],
                                          columns=method_results.columns.tolist())
         search_space_results.append(seed_results)
