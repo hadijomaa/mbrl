@@ -72,9 +72,12 @@ class Runner(object):
         if not self.inference:
             optimizer = self.optimizer
             learning_rate = self.learning_rate
+            beta_1 = 0.
+        else:
+            beta_1 = 0.9
 
         if optimizer == "adam":
-            optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate, beta_1=0.)
+            optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate, beta_1=beta_1)
         elif optimizer == "sgd":
             optimizer = tf.keras.optimizers.SGD(learning_rate=learning_rate)
         elif optimizer == "radam":
@@ -138,7 +141,7 @@ class Runner(object):
 
         if early_stopping:
             callbacks.append(tf.keras.callbacks.EarlyStopping(monitor=monitor, patience=16, restore_best_weights=True,
-                                                              min_delta=1e-4))
+                                                              min_delta=1e-2))
 
         if save_model:
             callbacks.append(tf.keras.callbacks.ModelCheckpoint(filepath=os.path.join(path, "model"),

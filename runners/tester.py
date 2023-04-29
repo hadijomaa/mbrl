@@ -27,6 +27,7 @@ class Tester(Runner):
         self.num_random_trajectories = args.num_random_trajectories
         self.inference_optimizer = args.inference_optimizer
         self.inference_learning_rate = args.inference_learning_rate
+        self.inference_epochs = args.inference_epochs
         self.mpc_seed = args.mpc_seed
         self.num_particles = args.num_particles
         self.horizon = args.horizon
@@ -70,7 +71,7 @@ class Tester(Runner):
         print("Model being trained ...")
         callbacks = self.prepare_callbacks(monitor="log_var", has_validation=False, save_model=False,
                                            path=self.log_path, early_stopping=True)
-        self.model.fit(self.task, callbacks=callbacks, epochs=self.epochs, verbose=0)
+        self.model.fit(self.task, callbacks=callbacks, epochs=self.inference_epochs, verbose=0)
 
     def design_controller(self):
         self.shooter = RandomShooter(num_random_trajectories=self.num_random_trajectories, seed=self.mpc_seed)

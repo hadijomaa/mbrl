@@ -1,4 +1,5 @@
 import argparse
+
 SEARCH_SPACE_IDS = ['4796', '5527', '5636', '5859', '5860',
                     '5891', '5906', '5965', '5970', '5971', '6766',
                     '6767', '6794', '7607', '7609', '5889']
@@ -25,10 +26,11 @@ def get_pets_parser(parser=None):
     parser.add_argument('--dataset_id', type=str, default='23', help="Dataset Id in the search space")
     parser.add_argument('--num_trials', type=int, default=100, help="Number of trials")
     parser.add_argument('--apply_lookahead', type=int, default=0, choices=[0, 1], help="Indicator to apply LookAhead")
-    parser.add_argument('--inference_optimizer', type=str, default="sgd", choices=["adam", "sgd"],
+    parser.add_argument('--inference_optimizer', type=str, default="adam", choices=["adam", "sgd"],
                         help='inference optimizer')
     parser.add_argument('--inference_learning_rate', type=float, default=1e-3,
                         help='learning rate for inference updates')
+    parser.add_argument('--inference_epochs', type=int, default=100, help='number of epochs for inference')
     parser.add_argument('--load_pretrained', type=int, default=1, choices=[0, 1], help='load pre-trained model')
     return parser
 
