@@ -1,6 +1,7 @@
 import os
 import subprocess
 
+# for particles in 10 100 1000 ; do for horizon in 3 5 10 ; do for trajectories in 100 250 500 ; do for apply_lookahead in 0 1 ; do for load_pretrained in 1 0 ; do python collect_test_results.py --horizon $horizon --num_particles $particles --num_random_trajectories $trajectories --apply_lookahead $apply_lookahead --load_pretrained $load_pretrained;done;done;done;done;done;
 import pandas as pd
 from helpers import parsers
 
@@ -54,8 +55,8 @@ if __name__ == "__main__":
         subfolder1 = "pre-trained" if args.load_pretrained else "random-initialization"
         subfolder2 = "LookAhead" if args.apply_lookahead else "MPC"
 
-        rerun_command = "{command} for particles in {particles}; do for horizon in {horizon}; do for trajectories in {trajectories};  do for file in scripts/sbatch/{search_space}/joint/{subfolder1}/cs_seed-45/test/horizon-$horizon/trajectories-$trajectories/particles-$particles/{subfolder2}/mpc-{mpc}/*; do msub $file;done;done;done;done;done;done;"
-        rerun_command = template_script.format(command="echo" if not args.rerun else "",
+        rerun_command = "for particles in {particles}; do for horizon in {horizon}; do for trajectories in {trajectories};  do for file in scripts/sbatch/{search_space}/joint/{subfolder1}/cs_seed-45/test/horizon-$horizon/trajectories-$trajectories/particles-$particles/{subfolder2}/mpc-{mpc}/*; do {command} $file;done;done;done;done;done;done;"
+        rerun_command = rerun_command.format(command="cat" if not args.rerun else "",
                                                search_space=args.search_space,
                                                subfolder1=subfolder1,
                                                subfolder2=subfolder2,
