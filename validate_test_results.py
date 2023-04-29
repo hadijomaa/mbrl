@@ -55,7 +55,7 @@ if __name__ == "__main__":
         subfolder1 = "pre-trained" if args.load_pretrained else "random-initialization"
         subfolder2 = "LookAhead" if args.apply_lookahead else "MPC"
 
-        rerun_command = "for particles in {particles}; do for horizon in {horizon}; do for trajectories in {trajectories};  do for file in scripts/sbatch/{search_space}/joint/{subfolder1}/cs_seed-45/test/horizon-$horizon/trajectories-$trajectories/particles-$particles/{subfolder2}/mpc-{mpc}/*; do {command} $file;done;done;done;done;done;done;"
+        rerun_command = "for particles in {particles}; do for horizon in {horizon}; do for trajectories in {trajectories};  do for file in /work/ws/nemo/fr_hj1023-LookAhead-0/mbrl/scripts/sbatch/{search_space}/joint/{subfolder1}/cs_seed-45/test/horizon-$horizon/trajectories-$trajectories/particles-$particles/{subfolder2}/mpc-{mpc}/*; do {command} $file;done;done;done;done;done;done;"
         rerun_command = rerun_command.format(command="cat" if not args.rerun else "",
                                                search_space=args.search_space,
                                                subfolder1=subfolder1,
@@ -65,6 +65,5 @@ if __name__ == "__main__":
                                                particles=args.num_particles,
                                                mpc=args.mpc_seed
                                                )
-        if args.rerun:
-            print(f"Rerunning missing using command: {rerun_command}")
-            subprocess.run(rerun_command.split(" "))
+        print(f"Rerunning missing using command: {rerun_command}")
+        subprocess.run(rerun_command.split(" "))
