@@ -6,7 +6,7 @@ import pandas as pd
 from helpers import parsers
 
 template_script = "{command} /work/ws/nemo/fr_hj1023-LookAhead-0/mbrl/scripts/sbatch/{search_space}/joint/{subfolder1}/cs_seed-45/test/horizon-{horizon}/trajectories-{trajectories}/particles-{particles}/{subfolder2}/mpc-{mpc}/{dataset_id}.sh"
-
+template_script2 = "for particles in {particles}; do for horizon in {horizon}; do for trajectories in {trajectories};  do for file in /work/ws/nemo/fr_hj1023-LookAhead-0/mbrl/scripts/sbatch/{search_space}/joint/{subfolder1}/cs_seed-45/test/horizon-$horizon/trajectories-$trajectories/particles-$particles/{subfolder2}/mpc-{mpc}/*; do {command} $file;done;done;done;done;"
 if __name__ == "__main__":
     parser = parsers.get_pets_parser()
     parser = parsers.get_hp_parser(parser)
@@ -50,20 +50,19 @@ if __name__ == "__main__":
                     print(f"Rerunning missing using command: {rerun_command}")
                     subprocess.run(rerun_command.split(" "))
         print(
-        f"found {found}; not found {not_found} , {args.num_particles}, {args.horizon}, {args.apply_lookahead}, {args.load_pretrained}, {args.num_random_trajectories}")
+            f"found {found}; not found {not_found} , {args.num_particles}, {args.horizon}, {args.apply_lookahead}, {args.load_pretrained}, {args.num_random_trajectories}")
     except Exception as ex:
         subfolder1 = "pre-trained" if args.load_pretrained else "random-initialization"
         subfolder2 = "LookAhead" if args.apply_lookahead else "MPC"
 
-        rerun_command = "for particles in {particles}; do for horizon in {horizon}; do for trajectories in {trajectories};  do for file in /work/ws/nemo/fr_hj1023-LookAhead-0/mbrl/scripts/sbatch/{search_space}/joint/{subfolder1}/cs_seed-45/test/horizon-$horizon/trajectories-$trajectories/particles-$particles/{subfolder2}/mpc-{mpc}/*; do {command} $file;done;done;done;done;done;done;"
-        rerun_command = rerun_command.format(command="cat" if not args.rerun else "msub",
-                                               search_space=args.search_space,
-                                               subfolder1=subfolder1,
-                                               subfolder2=subfolder2,
-                                               horizon=args.horizon,
-                                               trajectories=args.num_random_trajectories,
-                                               particles=args.num_particles,
-                                               mpc=args.mpc_seed
-                                               )
+        rerun_command = template_script2.format(command="cat" if not args.rerun else "msub",
+                                                search_space=args.search_space,
+                                                subfolder1=subfolder1,
+                                                subfolder2=subfolder2,
+                                                horizon=args.horizon,
+                                                trajectories=args.num_random_trajectories,
+                                                particles=args.num_particles,
+                                                mpc=args.mpc_seed
+                                                )
         print(f"Rerunning missing using command: {rerun_command}")
         subprocess.run(rerun_command.split(" "))
