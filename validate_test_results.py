@@ -56,7 +56,7 @@ if __name__ == "__main__":
         subfolder2 = "LookAhead" if args.apply_lookahead else "MPC"
 
         rerun_command = "for particles in {particles}; do for horizon in {horizon}; do for trajectories in {trajectories};  do for file in /work/ws/nemo/fr_hj1023-LookAhead-0/mbrl/scripts/sbatch/{search_space}/joint/{subfolder1}/cs_seed-45/test/horizon-$horizon/trajectories-$trajectories/particles-$particles/{subfolder2}/mpc-{mpc}/*; do {command} $file;done;done;done;done;done;done;"
-        rerun_command = rerun_command.format(command="cat" if not args.rerun else "",
+        rerun_command = rerun_command.format(command="cat" if not args.rerun else "msub",
                                                search_space=args.search_space,
                                                subfolder1=subfolder1,
                                                subfolder2=subfolder2,
