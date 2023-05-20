@@ -148,6 +148,6 @@ class Task(tf.keras.utils.Sequence):
         n_total = self.data[self.mode].shape[0]
         context_size_indices = list(map(
             lambda value: self.context_choice_randomizer.choice(np.setdiff1d(np.arange(n_total), value),
-                                                                size=min(context_size, n_total -1), replace=False),
+                                                                size=min(context_size, n_total - 1), replace=False),
             indexes))
         return context_size_indices

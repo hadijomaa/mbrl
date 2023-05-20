@@ -34,7 +34,7 @@ class MetaTrainer(Runner):
                                                   inner_steps=self.inner_steps)
 
         self.meta_valid_tasks = copy.deepcopy(self.meta_train_tasks)
-        self.meta_valid_tasks.fixed_context = True
+        self.meta_valid_tasks.fixed_context = False
         self.meta_valid_tasks.mode = "validation"
         self.meta_valid_tasks.on_epoch_end()
 

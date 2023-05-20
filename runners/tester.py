@@ -3,6 +3,7 @@ import os
 import copy
 
 import pandas as pd
+import numpy as np
 import losses
 
 from controllers.optimizer import RandomShooter
@@ -14,7 +15,6 @@ OUTPUT_FOLDER = "hpob/processed"
 
 
 class Tester(Runner):
-
     inference = True
 
     def __init__(self, args):
@@ -57,6 +57,7 @@ class Tester(Runner):
         self.clear_path(self.model_path)
 
     def load_model(self):
+        # store initial random weights of model
         if self.random_weights is None:
             self.random_weights = copy.deepcopy(self.model.get_weights())
 
@@ -81,6 +82,16 @@ class Tester(Runner):
                               apply_lookahead=self.apply_lookahead, utility_function=self.utility_function,
                               candidate_pool=self.task.candidate_pool)
 
+    def compare_weights(self, old_weights):
+        new_weights = copy.deepcopy(self.model.get_weights())
+        weights_equal = []
+        for new, old in zip(new_weights, old_weights):
+            weights_equal.append(np.equal(new, old).all())
+        no_change_in_weights = np.array(weights_equal).all()
+        if no_change_in_weights:
+            print("Model weights not updated")
+        return no_change_in_weights
+
     def perform_hpo(self, number_of_trials):
         self.task.mode = "hpo"
         print("------------------")
@@ -95,17 +106,28 @@ class Tester(Runner):
             seed_run_info = {}
             for t in range(number_of_trials):
                 print(f"Trial {t + 1}/{number_of_trials} | Seed {seed + 1}/5")
+                # update indexes of evaluated hps
                 self.task.on_epoch_end()
+                # load mode parameters
                 self.load_model()
+                # compile model
                 self.compile_model()
+                # store old weights
+                old_weights = copy.deepcopy(self.model.get_weights())
+                # fit model to observed hps
                 self.fit()
+                no_change_in_weights = self.compare_weights(old_weights=old_weights)
+                # perform policy
                 action, info = self.controller.act(self.task.state)
+                # store evaluations
                 self.task.log_evaluation(action)
                 print("Evaluating suggested hyperparameter")
+                # perform evaluation of candidate hps
                 self.task.do_trial()
                 info.update({"regret": self.task.regret[-1]})
+                info.update({"weights-updated": not no_change_in_weights})
                 for k, v in info.items():
-                    if "horizon" in k:
+                    if k in ["horizon", "weights-updated", "best_expected_horizon"]:
                         print(f"{k}: {v}")
                     else:
                         print(f"{k}: {100 * v:.2f}")
